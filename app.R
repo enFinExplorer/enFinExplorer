@@ -24,6 +24,7 @@ library(dplyr)
 library(tidyRSS)
 library(rtweet)
 library(lubridate)
+library(anytime)
 #library(plotly)
 library(quantmod)
 library(aRpsDCA)
@@ -1398,7 +1399,7 @@ shiny::shinyApp(
                                        column(6,
                                         dateInput('startDate', label = 'Forecast Start', value = today())),
                                        column(6,
-                                              numericInput('wellCount', 'Total Wells', value = 0, min = 0))
+                                              numericInput('wellCount', 'Gross Wells', value = 0, min = 0))
                                    ),
                                    fluidRow(
                                        column(6,
@@ -1442,6 +1443,10 @@ shiny::shinyApp(
                                         textOutput('rem10')))
                                )
                         )
+                    ),
+                    fluidRow(
+                        column(12,
+                               DT::dataTableOutput('pudFcst'))
                     )
                 ),
                 tablerTabItem(
@@ -2928,12 +2933,12 @@ shiny::shinyApp(
                 Component = c('qiOil', 'bOil', 'DiOil', 'DfOil', 'curtailOil', 'qfOil', 
                               'qiGas', 'bGas', 'DiGas', 'DfGas', 'curtailGas', 'qfGas',
                               'qiWater', 'bWater', 'DiWater', 'DfWater', 'curtailWater',
-                              'wellLife', 'wti', 'hh'),
+                              'wellLife', 'wti', 'hh', 'wtiDev', 'hhDev'),
                 
                 Value = c(input$qiOil, input$bOil, input$DiOil, input$DfOil, input$curtailOil, input$qfOil,
                           input$qiGas, input$bGas, input$DiGas, input$DfGas, input$curtailGas, input$qfGas,
                           input$qiWater, input$bWater, input$DiWater, input$DfWater, input$curtailWater,
-                          input$wellLife, input$wti, input$hh),
+                          input$wellLife, input$wti, input$hh, input$wtiDev, input$hhDev),
                 stringsAsFactors = FALSE) %>% spread(Component, Value)
             
         })
@@ -3185,21 +3190,23 @@ shiny::shinyApp(
             df <- cbind(df, df1)
             df$econAban <- input$econAban
             df$reversion <- input$reversion
+            df$abandonmentMethod <- input$abandonmentMethod
             df$oilEUR <- values$oilEUR
             df$gasEUR <- values$gasEUR
             df$waterEUR <- values$waterEUR
-            df$yr1Dev <- 0
-            df$yr2Dev <- 0
-            df$yr3Dev <- 0
-            df$yr4Dev <- 0
-            df$yr5Dev <- 0
-            df$yr6Dev <- 0
-            df$yr7Dev <- 0
-            df$yr8Dev <- 0
-            df$yr9Dev <- 0
-            df$yr10Dev <- 0
+            df$yr1Dev <- 1
+            df$yr2Dev <- 1
+            df$yr3Dev <- 1
+            df$yr4Dev <- 1
+            df$yr5Dev <- 1
+            df$yr6Dev <- 1
+            df$yr7Dev <- 1
+            df$yr8Dev <- 1
+            df$yr9Dev <- 1
+            df$yr10Dev <- 1
             df$startDate <- min(values$price$DATE)
-            df$wellCount <- 0
+            df$wellCount <- 10
+            
 
             if(is.null(values$devPlan)){
                 df$id <- 'tc1'
@@ -3209,7 +3216,7 @@ shiny::shinyApp(
                 df$id <- id
                 values$devPlan <- rbind(values$devPlan, df)
             }
-           
+ 
             updateAwesomeRadio(session, 'tcLoads', choices = unique(values$devPlan$id), selected = 'tc1', status = 'primary')
             Sys.sleep(1)
             updateButton(session, 'saveTC', label = 'Save TC to Development Plan', style = 'primary')
@@ -3226,6 +3233,10 @@ shiny::shinyApp(
             } else {
                 updateAwesomeRadio(session, 'tcLoads', choices = unique(values$devPlan$id),  status = 'primary')
             }
+            
+            df1 <- values$pudFcst %>% filter(id != id1)
+            values$pudFcst <- df1
+            
         })
         
         output$tcInfo <- renderText({
@@ -3233,7 +3244,9 @@ shiny::shinyApp(
                 NULL
             } else {
                 df <- values$devPlan %>% filter(id == input$tcLoads)
-                paste0('Oil EUR: ', df$oilEUR, ' MBO, Gas EUR: ', df$gasEUR, ' MMCF, Water EUR: ', df$waterEUR, ' MBW, Capex: ',(df$completeCost + df$drillCost)/1000, ' M$')
+                paste0('Oil EUR: ', df$oilEUR, ' MBO, Gas EUR: ', df$gasEUR, ' MMCF, Water EUR: ',
+                       df$waterEUR, ' MBW, Capex: ',(df$completeCost + df$drillCost)/1000, ' M$, Reversion?: ', df$reversion,
+                       ', Economic Limit?: ', df$econAban)
             }
         })
         
@@ -3491,7 +3504,324 @@ shiny::shinyApp(
             }
         })
         
- 
+        observe({
+            if(is.null(values$devPlan) || nrow(values$devPlan) == 0  || is.null(input$wellCount)){
+                values$pudFcst <- NULL
+            } else {
+                #print(head(values$price))
+                dfx <- values$devPlan
+                
+                econSummary <- lapply(split(dfx, dfx[,'id']), function (well) tryCatch({
+                    startDate1 <- data.frame(Month = seq(0, 30*12-1, 1))
+                    startDate1$date <- min(well$startDate)
+                    startDate1$date <- startDate1$date %m+% months(startDate1$Month)
+                    startDate1$Month <- seq(1, 30*12, 1)
+                    startDate1$wells <- 0
+                    startDate1$wells[1:12] <-well$yr1Dev/12
+                    startDate1$wells[13:24] <-well$yr2Dev/12
+                    startDate1$wells[25:36] <-well$yr3Dev/12
+                    startDate1$wells[37:48] <-well$yr4Dev/12
+                    startDate1$wells[49:60] <-well$yr5Dev/12
+                    startDate1$wells[61:72] <-well$yr6Dev/12
+                    startDate1$wells[73:84] <-well$yr7Dev/12
+                    startDate1$wells[85:96] <-well$yr8Dev/12
+                    startDate1$wells[97:108] <-well$yr9Dev/12
+                    if(well$yr10Dev == 0){
+                        startDate1 <- startDate1 %>% filter(wells != 0)
+                    } else {
+                        remMonths <- as.integer((well$wellCount - sum(startDate1$wells))/well$yr10Dev)*12-1
+                        startDate1$wells[109:(109+remMonths)] <- well$yr10Dev/12
+                        startDate1 <- startDate1 %>% filter(wells != 0)
+                        missingWells <- well$wellCount - sum(startDate1$wells)
+                        startDate1$wells[nrow(startDate1)] <- startDate1$wells[nrow(startDate1)] + missingWells
+                    }
+                    startDate1$id <- well$id
+                    startDate1$id2 <- paste0(startDate1$id,startDate1$date)
+                    startDate1 <- merge(startDate1, well, by='id', all.x=TRUE)
+                    startDate1
+                },
+                error = function(e) {
+                    e
+                    NULL
+                }
+                )
+                )
+                
+                dfx <- dplyr::bind_rows(econSummary)
+                
+                prices <- values$price
+                names(prices) <- c('Date', 'oilPrice', 'gasPrice')
+                prices <- as.data.frame(prices)
+                
+                if(nrow(dfx) == 0) {
+                    values$pudFcst <- NULL
+                } else {
+                    dfx$wi <- dfx$wi *dfx$wells
+                    dfx$wi2 <- dfx$wi2*dfx$wells
+                    #print(head(dfx))
+                    
+                    
+                    
+                    econSummary <- lapply(split(dfx, dfx[,'id2']), function (df1) tryCatch({
+                    
+                        oil <- curtailed.q(arps.decline(
+                            df1$qiOil*365, as.nominal(df1$DiOil), df1$bOil, as.nominal(df1$DfOil)),
+                            df1$curtailOil/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                        gas <- curtailed.q(arps.decline(
+                            df1$qiGas*365, as.nominal(df1$DiGas), df1$bGas, as.nominal(df1$DfGas)),
+                            df1$curtailGas/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                        
+                        water <- curtailed.q(arps.decline(
+                            df1$qiWater*365, as.nominal(df1$DiWater), df1$bWater, as.nominal(df1$DfWater)),
+                            df1$curtailWater/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                        
+                        df <- data.frame(Months = seq(1, 50*12, by = 1), Gas = gas, Oil = oil, Water = water)
+                        rm(oil, gas, water)
+                        if(df1$abandonmentMethod == 'Time'){
+                            #print(declineValues()$wellLife)
+                            df <- df %>% filter(Months <= (df1$wellLife)*12) %>%filter(!duplicated(Months))
+                            df <- as.data.frame(df)
+                            #print(df %>% filter(Oil == 0))
+                        }
+                        
+                        if(df1$abandonmentMethod == 'Oil Rate'){
+                            df <- df %>% filter(Oil >= df1$qfOil*30.45)
+                        }
+                        if(df1$abandonmentMethod == 'Gas Rate'){
+                            df <- df %>% filter(Gas >= df1$qfGas*30.45)
+                        }
+                        
+                        df$Date <- df1$date %m+% months(df$Months -1 + df1$spudToProd)
+                        df$Date <- df$Date %m+% days(1)
+                        df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+                        df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+                        df$Oil <- df$Oil*df1$wi/100
+                        df$Gas <- df$Gas*df1$wi/100
+                        df$Water <- df$Water*df1$wi/100
+                        df$Sales_Gas <- df$Gas*df1$shrink
+                        df$NGL <- df$Gas*df1$nglYield/100
+                        df$wi <- df1$wi
+                        df2 <- data.frame(Months = seq(((df1$spudToProd-1)*-1), 0, 1), Gas = 0, Oil = 0, Water = 0)
+                        df$capex <- 0
+                        df2$capex <- 0
+                        df2$capex[1] <- df1$drillCost*df1$wi/100
+                        df2$capex[nrow(df2)] <- df1$completeCost*df1$wi/100
+                        df2$Date <- df$Date[1] %m+% months(df2$Months -1)
+                        
+                        
+                        
+                        if(input$priceSelection == 'Flat'){
+                            df$oilPrice <- declineValues()$wtiDev
+                            df$gasPrice <- declineValues()$hhDev
+                            df$nglPrice <- df$oilPrice*df1$discNGL/100
+                        } else if (input$priceSelection == 'Current Strip'){
+                            df <- as.data.frame(df)
+                            #str(df$Date)
+                            #str(prices$Date)
+                            df <- merge(df, prices, by='Date', all.x=TRUE)
+                            df <- as.data.frame(df)
+                            #print(head(df))
+    
+                            #rm(prices)
+                            df$oilPrice <- na.locf(df$oilPrice)
+                            df$gasPrice <- na.locf(df$gasPrice)
+                            df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                            df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+    
+                            df$nglPrice <- df$oilPrice*df1$discNGL/100
+                            #print(head(df))
+                        }
+                        # 
+                        # df$oilPrice <- 60
+                        # df$gasPrice <- 2
+                        # df$nglPrice <- 15
+                        
+                        df$nri <- df1$nri#*expenseValues()$wi/100
+                        df$oilRev <- (df$oilPrice-df1$discOil)*df$nri/100*df$Oil
+                        df$gasRev <- (df$gasPrice-df1$discGas)*df$nri/100*df$Sales_Gas*df1$btu
+                        df$nglRev <- (df$nglPrice)*df$nri/100*df$NGL
+                        df$rev <- df$oilRev+df$gasRev+df$nglRev
+                        df$tax <- df$oilRev*df1$stxOil/100 + (df$gasRev+df$nglRev)*df1$stxGas/100 +
+                            df$Oil*df$nri/100*df1$oilSTX + df$Gas*df1$nri/100*df1$gasSTX +
+                            df$rev*df$nri/100*df1$atx/100
+                        
+                        df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
+                            df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
+                        
+                        df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df1$wi/100 + df1$yr2Fixed*df1$wi/100
+                        df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df1$wi/100 + df1$yr2Fixed*df1$wi/100
+                        df$nocf <- df$rev-df$tax-df$expense
+                        
+                        
+                        if(df1$reversion == 'Penalty'){
+                            penalty <- df1$penalty/100*(df1$drillCost*df1$wi/100 + df1$completeCost*df1$wi/100)
+                            
+                            df$cumNOCF <- cumsum(df$nocf)
+                            df <- df %>% mutate(wi2 = replace(wi, cumNOCF > penalty, df1$wi2))
+                            df <- df %>% mutate(nri = replace(nri, cumNOCF > penalty, df1$nri2))
+                            df$Oil <- df$Oil/df$wi*df$wi2
+                            df$Gas <- df$Gas/df$wi*df$wi2
+                            df$Water <- df$Water/df$wi*df$wi2
+                            df$Sales_Gas <- df$Sales_Gas/df$wi*df$wi2
+                            df$NGL <- df$NGL/df$wi*df$wi2
+                            df$wi <- df$wi2
+                            
+                            df$oilRev <- (df$oilPrice-df1$discOil)*df$nri/100*df$Oil
+                            df$gasRev <- (df$gasPrice-df1$discGas)*df$nri/100*df$Sales_Gas*df1$btu
+                            df$nglRev <- (df$nglPrice)*df$nri/100*df$NGL
+                            df$rev <- df$oilRev+df$gasRev+df$nglRev
+                            df$tax <- df$oilRev*df1$stxOil/100 + (df$gasRev+df$nglRev)*df1$stxGas/100 +
+                                df$Oil*df$nri/100*df1$oilSTX + df$Gas*df$nri/100*df1$gasSTX +
+                                df$rev*df$nri/100*df1$atx/100
+                            
+                            df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
+                                df1$wrkExp*df$wi/100 + df1$yr1Fixed*df$wi/100
+                            
+                            df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
+                            df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
+                            df$nocf <- df$rev-df$tax-df$expense
+                            df <- subset(df, select = -c(cumNOCF))
+                            df <- subset(df, select = -c(wi2))
+                            df <- as.data.frame(df)
+                        }
+                        
+                        if(df1$reversion == 'IRR'){
+                            Missing <- setdiff(dput(names(df)), names(df2))  # Find names of missing columns
+                            df3 <- df2
+                            df3[Missing] <- 0                    # Add them, filled with '0's
+                            df3 <- df3[,names(df)]
+                            
+                            df4 <- rbind(df3, df)
+                            df4$fcf <- df4$nocf - df4$capex
+                            i <- 2
+                            IRR2 <- df1$reversionIRR/100
+                            IRRx <- 0
+                            while(IRRx <= IRR2 & i<=(nrow(df4))){
+                                IRRx <- IRRcalc(df4$fcf[1:i], df4$Months[1:i])
+                                i <- i + 1
+                            }
+                            
+                            i <- i - nrow(df2)
+                            df <- as.data.frame(df)
+                            
+                            if(i >= nrow(df)){
+                                NULL
+                            } else {
+                                #i <- i -1
+                                df$nri[i:nrow(df)] <- df1$nri2
+                                df$wi2 <- df$wi
+                                df$wi2[i:nrow(df)] <- df1$wi2
+                                df$Oil <- df$Oil/df$wi*df$wi2
+                                df$Gas <- df$Gas/df$wi*df$wi2
+                                df$Water <- df$Water/df$wi*df$wi2
+                                df$Sales_Gas <- df$Sales_Gas/df$wi*df$wi2
+                                df$NGL <- df$NGL/df$wi*df$wi2
+                                df$wi <- df$wi2
+                                
+                                df$oilRev <- (df$oilPrice-df1$discOil)*df$nri/100*df$Oil
+                                df$gasRev <- (df$gasPrice-df1$discGas)*df$nri/100*df$Sales_Gas*df1$btu
+                                df$nglRev <- (df$nglPrice)*df$nri/100*df$NGL
+                                df$rev <- df$oilRev+df$gasRev+df$nglRev
+                                df$tax <- df$oilRev*df1$stxOil/100 + (df$gasRev+df$nglRev)*df1$stxGas/100 +
+                                    df$Oil*df$nri/100*df1$oilSTX + df$Gas*df$nri/100*df1$gasSTX +
+                                    df$rev*df$nri/100*df1$atx/100
+                                
+                                df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
+                                    df1$wrkExp*df$wi/100 + df1$yr1Fixed*df$wi/100
+                                
+                                df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
+                                df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
+                                df$nocf <- df$rev-df$tax-df$expense
+                                df <- subset(df, select = -c(wi2))
+                                df <- as.data.frame(df)
+                            }
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                        }
+                        
+                        if(df1$econAban == 'Yes'){
+                            df <- df[nrow(df):1,]
+                            df$cumNOCF <- cumsum(df$nocf)
+                            df$prev <- df$cumNOCF- dplyr::lag(df$cumNOCF, n = 1L)
+                            prev <- which(df$prev > 0)[1]
+                            df <- df[prev:nrow(df),]
+                            df <- df[nrow(df):1,]
+                            df <- subset(df, select = -c(cumNOCF, prev))
+                        }
+                        df <- as.data.frame(df)
+                        df$pna <- 0
+                        df$pna[nrow(df)] <- df1$pna*df$wi[nrow(df)]/100
+                        
+                        Missing <- setdiff(dput(names(df)), names(df2))  # Find names of missing columns
+                        df2[Missing] <- 0                    # Add them, filled with '0's
+                        df2 <- df2[,names(df)]
+                        
+                        df <- rbind(df2, df)
+                        df$fcf <- df$nocf - df$capex - df$pna
+                        df$Months <- seq(0,nrow(df)-1,1)
+                        df$id <- df1$id
+                        #df$shrink <- df1$shrink
+                    
+                        df
+                    },
+                    error = function(e) {
+                        e
+                        NULL
+                    }
+                    )
+                    )
+                    
+                    df <- dplyr::bind_rows(econSummary)
+                    
+                    if(nrow(df) == 0){
+                        values$pudFcst <- NULL
+                    } else {
+                        df$wells <- df$wi/100
+                        df$netOil <- df$Oil*df$wi/100*df$nri/100
+                        df$netGas <- df$Sales_Gas*df$wi/100*df$nri/100
+                        df$netNGL <- df$NGL*df$wi/100*df$nri/100
+                        df$oilPrice[df$oilPrice == 0] <- NA
+                        df$gasPrice[df$gasPrice == 0] <- NA
+                        df$nglPrice[df$nglPrice == 0] <- NA
+                        #print(head(df))
+                        df1 <- df %>% group_by(Date, id) %>% 
+                            summarise(Oil = sum(Oil), Gas = sum(Gas), Sales_Gas = sum(Sales_Gas), NGL = sum(NGL), Water = sum(Water), 
+                                      netOil = sum(netOil), netGas = sum(netGas), netNGL = sum(netNGL), oilPrice = mean(oilPrice, na.rm=TRUE), 
+                                      gasPrice = mean(gasPrice, na.rm=TRUE), nglPrice = mean(nglPrice, na.rm=TRUE), oilRev = sum(oilRev), gasRev = sum(gasRev),
+                                      nglRev = sum(nglRev), revenue = sum(rev), tax = sum(tax), expense = sum(expense), nocf=sum(nocf), capex = sum(capex), pna = sum(pna), fcf = sum(fcf), wells = sum(wells))
+                        #print(head(df))
+                        df1$Date <- as.Date(df1$Date)
+                        values$pudFcst <- df1
+                        
+                        
+                    }
+                }
+                
+                }
+            
+            
+            
+        })
+        
+        output$pudFcst <- DT::renderDataTable({
+            if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
+                NULL
+            } else {
+                df <- values$pudFcst %>% group_by(Date) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
+                                                                       Water = as.integer(sum(Water)),  as.integer(netOil = sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
+                                                                       oilPrice = mean(oilPrice, na.rm=TRUE),gasPrice = mean(gasPrice, na.rm=TRUE), nglPrice = mean(nglPrice, na.rm=TRUE),
+                                                                       oilRev = as.integer(sum(oilRev)), gasRev = as.integer(sum(gasRev)),nglRev = as.integer(sum(nglRev)), 
+                                                                       revenue = as.integer(sum(revenue)), tax = as.integer(sum(tax)), expense = as.integer(sum(expense)), 
+                                                                       nocf=as.integer(sum(nocf)), capex = as.integer(sum(capex)), pna = as.integer(sum(pna)), fcf = as.integer(sum(fcf)),
+                                                                       wells = as.integer(sum(wells)))
+                DT::datatable(df, rownames = FALSE)
+            }
+        })
         
     }
 )
