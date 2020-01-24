@@ -3815,9 +3815,9 @@ shiny::shinyApp(
                 df <- values$pudFcst %>% group_by(Date) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
                                                                        Water = as.integer(sum(Water)),  as.integer(netOil = sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
                                                                        oilPrice = scales::dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = scales::dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = scales::dollar(mean(nglPrice, na.rm=TRUE)),
-                                                                       oilRev = as.integer(sum(oilRev)), gasRev = as.integer(sum(gasRev)),nglRev = as.integer(sum(nglRev)), 
-                                                                       revenue = as.integer(sum(revenue)), tax = as.integer(sum(tax)), expense = as.integer(sum(expense)), 
-                                                                       nocf=as.integer(sum(nocf)), capex = as.integer(sum(capex)), pna = as.integer(sum(pna)), fcf = as.integer(sum(fcf)),
+                                                                       oilRev = scales::dollar(as.integer(sum(oilRev))), gasRev = scales::dollar(as.integer(sum(gasRev))),nglRev = scales::dollar(as.integer(sum(nglRev))), 
+                                                                       revenue = scales::dollar(as.integer(sum(revenue))), tax = scales::dollar(as.integer(sum(tax))), expense = scales:dollar(as.integer(sum(expense))), 
+                                                                       nocf= scales::dollar(as.integer(sum(nocf))), capex = scales::dollar(as.integer(sum(capex))), pna = scales::dollar(as.integer(sum(pna))), fcf = scales::dollar(as.integer(sum(fcf))),
                                                                        wells = as.integer(sum(wells)))
                 
                 names(df) <- c('DATE', 'OIL, BBL', 'GAS, MCF', 'SALES_GAS, MCF', 'NGL, BBL', 'WATER, BBL', 'NET OIL, BBL', 'NET GAS, MCF', 'NET NGL, BBL', 'OIL PRICE, $', 'GAS PRICE, $', 'NGL PRICE, $', 'OIL REVENUE, $',
