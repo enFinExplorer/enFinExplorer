@@ -25,10 +25,10 @@ library(tidyRSS)
 library(rtweet)
 library(lubridate)
 library(anytime)
-#library(plotly)
+library(plotly)
 library(quantmod)
 library(aRpsDCA)
-
+library(scales)
 
 
 api_key <- "YD0LELAB40MThlu12RlH3WVZl"
@@ -871,6 +871,11 @@ shiny::shinyApp(
                     "Type Curves"
                 ),
                 tablerNavMenuItem(
+                    tabName = "pdp",
+                    icon = 'box',
+                    "Proved Developed Forecast"
+                ),
+                tablerNavMenuItem(
                     tabName = "devPlan",
                     icon = 'box',
                     "Development Plan"
@@ -956,10 +961,23 @@ shiny::shinyApp(
                                              dateInput(inputId = 'start_date', label = 'Start Date', value = '2019-01-01'),
                                              echarts4rOutput('hcplot')
                                              
-                                         )
+                                         )   
+                                         
                                          
                                   ),
                                   column(6,
+                                  
+                                      tablerCard(
+                                          title = 'Strip Pricing',
+                                          closable = FALSE,
+                                          zoomable = TRUE,
+                                          width = 12,
+                                          echarts4rOutput('stripPrice')
+                                      )
+                                      )
+                                  ),
+                              fluidRow(
+                                  column(12,
                                          tablerCard(
                                              title = 'S&P 500 Benchmarking',
                                              closable = FALSE,
@@ -968,15 +986,28 @@ shiny::shinyApp(
                                              width = 12,
                                              dateInput(inputId = 'start_date1', label = 'Start Date', value = '2019-01-01'),
                                              multiInput('operatorSelect1', 'Select Operators', choices = opList1, selected = 'APA'),
-                                            
+                                             
                                              echarts4rOutput('hcplot1')
                                              
                                          )
-                                         
                                   )
                               ),
+                              
+                             fluidRow(
+                                 column(12,
+                                     tablerCard(
+                                         title = icon('twitter'),
+                                         closable = FALSE,
+                                         zoomable = FALSE,
+                                         collapsed = FALSE,
+                                         width = 12,
+                                         DT::dataTableOutput('tweets')
+                                     )
+                                 )
+      
+                              ),
                               fluidRow(
-                                  column(6,
+                                  column(12,
                                          tablerCard(
                                              title =icon('newspaper'),
                                              closable = FALSE,
@@ -985,18 +1016,6 @@ shiny::shinyApp(
                                              width = 12,
 
                                              DT::dataTableOutput('news')
-                                             
-                                         )
-                                         
-                                  ),
-                                  column(6,
-                                         tablerCard(
-                                             title = icon('twitter'),
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-                                             DT::dataTableOutput('tweets')
                                              
                                          )
                                          
@@ -1253,16 +1272,7 @@ shiny::shinyApp(
                         ),
                         column(
                             width = 6,
-                            hidden(div(
-                                id = 'hidePrice',
-                                tablerCard(
-                                    title = 'Strip Pricing',
-                                    closable = FALSE,
-                                    zoomable = TRUE,
-                                    width = 12,
-                                    echarts4rOutput('stripPrice')
-                                )
-                            )),
+                            
                             tablerCard(
                                 title = 'Type Curve Plot',
                                 closable = FALSE,
@@ -1368,12 +1378,127 @@ shiny::shinyApp(
                     )
                 ),
                 tablerTabItem(
+                    tabName = "pdp",
+                    fluidRow(
+                        column(3,
+                               tablerCard(
+                                   title = 'PDP Profile Type',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   awesomeRadio('pdpType',
+                                                'PDP Input Type',
+                                                choices = c('Full Economics', 'Production Only'),
+                                                selected = 'Production Only',
+                                                status = 'primary')
+                                   
+                                     
+                               )),
+                        column(6,
+                               tablerCard(
+                                title = 'Data Load',
+                                closable = FALSE,
+                                zoomable = TRUE,
+                                width = 12,
+                               
+                               textOutput('pdpInstruct'),
+                               #tableHTML_output('rowInstruct'),
+                               fileInput("file1", "Choose CSV File",
+                                         accept = c(
+                                             "text/csv",
+                                             "text/comma-separated-values,text/plain",
+                                             ".csv")
+                               ),
+                               plotlyOutput('contents')
+                               ),
+                               tablerCard(
+                                   title = 'PDP Plot',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   plotlyOutput('pdpPlot'),
+                                   textOutput('pdpPV')
+                               )
+                        ),
+                        column(3,
+                               tablerCard(
+                                   title = 'Basic Assumptions',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   dateInput('effDate', 'Effective Date'),
+                                   numericInput('wiPDP', 'WI %', value =100, min = 1, max = 100),
+                                   numericInput('nriPDP', 'NRI % (to the 100%)', value =75, min = 1, max = 100),
+                                   numericInput('pnaPDP', 'P&A Per Well, $', value = 20000, min = 1),
+                                   numericInput('pdpDisc', 'PDP Discount Rate, %', value = 10, min =0, max = 30),
+                                   awesomeRadio('econLimitPDP',
+                                                'Economic Limit Cutoff?',
+                                                choices = c('Yes', 'No'),
+                                                selected = 'Yes',
+                                                status = 'primary')
+                                          ),
+                               tablerCard(
+                                   title = 'Revenue Assumptions',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   awesomeRadio('pdpPrice',
+                                                'PDP Price Case',
+                                                choices = c('Current Strip', 'Flat'),
+                                                selected = 'Current Strip',
+                                                status = 'primary'),
+                                   
+                                   numericInput('wtiPDP', 'WTI, $/BBL', value =60, min = 1),
+                                   numericInput('hhPDP', 'HH, $/BBL', value = 2, min = 0.1),
+                                   numericInput('oilDiffPDP', 'Oil Basis Diff, $/BBL', value = 2, min = 0),
+                                   numericInput('hhDiffPDP', 'Gas Basis Diff, $/MCF', value = 0.5, min = 0),
+                                   numericInput('nglDiffPDP', 'NGL Price % WTI', value = 20, min = 0, max = 100),
+                                   numericInput('shrinkPDP', 'Shrink (fraction retained)', value = 0.75, min = 0, max = 1),
+                                   numericInput('nglYieldPDP', 'NGL Yield, BBL/MMCF', value = 75, min = 0, max = 200),
+                                   numericInput('btuPDP', 'Gas BTU', value = 1, min = 0, max = 3)
+                               ),
+                               tablerCard(
+                                   title = 'Expense Assumptions',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   numericInput('wellsPDP', 'Wells', value = 100, min = 1),
+                                   numericInput('fixedPDP', 'Fixed Opex/Month/Well', value =1000, min = 1),
+                                   numericInput('varGasPDP', 'Variable Gas Opex, $/MCF', value = 0.25, min = 0),
+                                   numericInput('varOilPDP', 'Variable Oil Opex, $/BBL', value = 2, min = 0),
+                                   numericInput('varWaterPDP', 'Variable Water Opex, $/BBL', value = 0.5, min = 0),
+                                   numericInput('varBOEPDP', 'Variable Liquids (Oil+NGL), $/BBL', value = 1, min = 0)
+                               ),
+                               tablerCard(
+                                   title = 'Tax Assumptions',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   numericInput('stxOilPDP', 'Oil Severance % Revenue', 4.6, min = 0, max = 20),
+                                   numericInput('stxGasPDP', 'Gas/NGL Severance % Revenue', 7.5, min = 0, max = 20),
+                                   numericInput('oilSTXPDP', 'Oil Severance/BBL', 1, min = 0, max = 20),
+                                   numericInput('gasSTXPDP', 'Gas Severance/MCF', .1, min = 0, max = 20),
+                                   numericInput('atxPDP', 'Ad Val % Revenue', 2.5, min = 0, max = 20)
+                               )
+                               )
+                    )
+                    
+                    
+                ),
+                
+                tablerTabItem(
                     tabName = 'devPlan',
                     fluidRow(
                         column(3,
-                               awesomeRadio('tcLoads', 'Available Type Curves', choices = '', inline = TRUE, checkbox = TRUE, status = "primary"),
-                               textOutput('tcInfo'),
-                               bsButton('removeTC', 'Remove Selected TC', style = 'danger')
+                               tablerCard(
+                                   title = 'Type Curve Information',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   awesomeRadio('tcLoads', 'Available Type Curves', choices = '', inline = TRUE, checkbox = TRUE, status = "primary"),
+                                   textOutput('tcInfo'),
+                                   bsButton('removeTC', 'Remove Selected TC', style = 'danger')
+                               )
                                ),
                         column(3,
                                tablerCard(
@@ -1399,54 +1524,74 @@ shiny::shinyApp(
                                        column(6,
                                         dateInput('startDate', label = 'Forecast Start', value = today())),
                                        column(6,
-                                              numericInput('wellCount', 'Gross Wells', value = 0, min = 0))
+                                              numericInput('wellCount', 'Gross Wells', value = 10, min = 0))
                                    ),
                                    fluidRow(
                                        column(6,
-                                        numericInput('yr1Dev', 'Year 1 Wells', value = 0, min = 0),
+                                        numericInput('yr1Dev', 'Year 1 Wells', value = 1, min = 0),
                                         textOutput('rem1')),
                                        
                                        column(6,
-                                        numericInput('yr2Dev', 'Year 2 Wells', value = 0, min = 0),
+                                        numericInput('yr2Dev', 'Year 2 Wells', value = 1, min = 0),
                                         textOutput('rem2'))
                                        ),
                                    fluidRow(
                                        column(6,
-                                        numericInput('yr3Dev', 'Year 3 Wells', value = 0, min = 0),
+                                        numericInput('yr3Dev', 'Year 3 Wells', value = 1, min = 0),
                                         textOutput('rem3')),
                                        column(6,
-                                        numericInput('yr4Dev', 'Year 4 Wells', value = 0, min = 0),
+                                        numericInput('yr4Dev', 'Year 4 Wells', value = 1, min = 0),
                                         textOutput('rem4'))
                                        ),
                                    fluidRow(
                                        column(6,
-                                        numericInput('yr5Dev', 'Year 5 Wells', value = 0, min = 0),
+                                        numericInput('yr5Dev', 'Year 5 Wells', value = 1, min = 0),
                                         textOutput('rem5')),
                                        column(6,
-                                        numericInput('yr6Dev', 'Year 6 Wells', value = 0, min = 0),
+                                        numericInput('yr6Dev', 'Year 6 Wells', value = 1, min = 0),
                                         textOutput('rem6'))
                                        ),
                                    fluidRow(
                                        column(6,
-                                        numericInput('yr7Dev', 'Year 7 Wells', value = 0, min = 0),
+                                        numericInput('yr7Dev', 'Year 7 Wells', value = 1, min = 0),
                                         textOutput('rem7')),
                                        column(6,
-                                        numericInput('yr8Dev', 'Year 8 Wells', value = 0, min = 0),
+                                        numericInput('yr8Dev', 'Year 8 Wells', value = 1, min = 0),
                                         textOutput('rem8'))
                                        ),
                                    fluidRow(
                                        column(6,
-                                        numericInput('yr9Dev', 'Year 9 Wells', value = 0, min = 0),
+                                        numericInput('yr9Dev', 'Year 9 Wells', value = 1, min = 0),
                                         textOutput('rem9')),
                                        column(6,
-                                        numericInput('yr10Dev', 'Year 10+ (Wells/Year)', value = 0, min = 0),
-                                        textOutput('rem10')))
+                                        numericInput('yr10Dev', 'Year 10+ (Wells/Year)', value = 1, min = 0),
+                                        textOutput('rem10'))),
+                                   bsButton('addFcst', 'Add to Forecast', style = 'primary', size='small')
                                )
                         )
                     ),
                     fluidRow(
-                        column(12,
-                               DT::dataTableOutput('pudFcst'))
+                        column(6,
+                               tablerCard(
+                                   title = 'Cash Flow Summary',
+                                   closable = FALSE,
+                                   zoomable = FALSE,
+                                   width = 12,
+                                   DT::dataTableOutput('pudFcst'))
+                        ),
+                        column(6,
+                               tablerCard(
+                                   title = 'Cash Flow Graph',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   selectizeInput('graphSelect', 'Select Metric', choices = c('Oil', 'Gas', 'Sales_Gas',
+                                                                                              'NGL', 'Water', 'netOil', 'netGas', 'netBOE', 'netMCFE',
+                                                                                              'netNGL', 'revenue', 'tax', 'expense', 'nocf',
+                                                                                              'capex', 'fcf'), selected = 'netBOE'),
+                                               
+                                   plotlyOutput('cfGraph')
+                               ))
                     )
                 ),
                 tablerTabItem(
@@ -2933,12 +3078,12 @@ shiny::shinyApp(
                 Component = c('qiOil', 'bOil', 'DiOil', 'DfOil', 'curtailOil', 'qfOil', 
                               'qiGas', 'bGas', 'DiGas', 'DfGas', 'curtailGas', 'qfGas',
                               'qiWater', 'bWater', 'DiWater', 'DfWater', 'curtailWater',
-                              'wellLife', 'wti', 'hh', 'wtiDev', 'hhDev'),
+                              'wellLife', 'wti', 'hh', 'wtiDev', 'hhDev', 'wtiPDP', 'hhPDP'),
                 
                 Value = c(input$qiOil, input$bOil, input$DiOil, input$DfOil, input$curtailOil, input$qfOil,
                           input$qiGas, input$bGas, input$DiGas, input$DfGas, input$curtailGas, input$qfGas,
                           input$qiWater, input$bWater, input$DiWater, input$DfWater, input$curtailWater,
-                          input$wellLife, input$wti, input$hh, input$wtiDev, input$hhDev),
+                          input$wellLife, input$wti, input$hh, input$wtiDev, input$hhDev, input$wtiPDP, input$hhPDP),
                 stringsAsFactors = FALSE) %>% spread(Component, Value)
             
         })
@@ -2949,17 +3094,26 @@ shiny::shinyApp(
                               'discGas', 'discNGL', 'btu', 'shrink', 'nglYield', 'stxOil',
                               'stxGas', 'oilSTX', 'gasSTX', 'atx', 'yr1Fixed',
                               'yr2Fixed', 'finalFixed', 'varOilExp', 'varGasExp', 'varWaterExp', 'wrkExp',
-                              'penalty', 'reversionIRR', 'nri2', 'wi', 'wi2'),
+                              'penalty', 'reversionIRR', 'nri2', 'wi', 'wi2',
+                              'wiPDP', 'nriPDP', 'oilDiffPDP', 'hhDiffPDP', 'nglDiffPDP',
+                              'shrinkPDP', 'nglYieldPDP', 'btuPDP', 'wellsPDP',
+                              'fixedPDP', 'varGasPDP', 'varOilPDP', 'varWaterPDP', 'varBOEPDP',
+                              'pnaPDP', 'stxOilPDP', 'stxGasPDP', 'oilSTXPDP', 'gasSTXPDP', 'atxPDP',
+                              'effDate', 'pdpDisc'),
                 
                 Value = c(input$nri, input$spudToProd, input$drillCost, input$completeCost, input$pna, input$discOil,
                           input$discGas, input$discNGL, input$btu, input$shrink, input$nglYield, input$stxOil,
                           input$stxGas, input$oilSTX, input$gasSTX, input$atx, input$yr1Fixed,
                           input$yr2Fixed, input$finalFixed, input$varOilExp, input$varGasExp, input$varWaterExp, input$wrkExp,
-                          input$penalty, input$reversionIRR, input$nri2, input$wi, input$wi2),
+                          input$penalty, input$reversionIRR, input$nri2, input$wi, input$wi2,
+                          input$wiPDP, input$nriPDP, input$oilDiffPDP, input$hhDiffPDP, input$nglDiffPDP,
+                          input$shrinkPDP, input$nglYieldPDP, input$btuPDP, input$wellsPDP,
+                          input$fixedPDP, input$varGasPDP, input$varOilPDP, input$varWaterPDP,
+                          input$varBOEPDP, input$pnaPDP, input$stxOilPDP, input$stxGasPDP, input$oilSTXPDP,
+                          input$gasSTXPDP, input$atxPDP, input$effDate, input$pdpDisc),
                 stringsAsFactors = FALSE) %>% spread(Component, Value)
             
         })
-        
         
         observe({
             if(input$reversion == 'None'){
@@ -3194,18 +3348,18 @@ shiny::shinyApp(
             df$oilEUR <- values$oilEUR
             df$gasEUR <- values$gasEUR
             df$waterEUR <- values$waterEUR
-            df$yr1Dev <- 1
-            df$yr2Dev <- 1
-            df$yr3Dev <- 1
-            df$yr4Dev <- 1
-            df$yr5Dev <- 1
-            df$yr6Dev <- 1
-            df$yr7Dev <- 1
-            df$yr8Dev <- 1
-            df$yr9Dev <- 1
-            df$yr10Dev <- 1
+            df$yr1Dev <- yearValues()$yr1Dev
+            df$yr2Dev <- yearValues()$yr2Dev
+            df$yr3Dev <- yearValues()$yr3Dev
+            df$yr4Dev <- yearValues()$yr4Dev
+            df$yr5Dev <- yearValues()$yr5Dev
+            df$yr6Dev <- yearValues()$yr6Dev
+            df$yr7Dev <- yearValues()$yr7Dev
+            df$yr8Dev <- yearValues()$yr8Dev
+            df$yr9Dev <- yearValues()$yr9Dev
+            df$yr10Dev <- yearValues()$yr10Dev
             df$startDate <- min(values$price$DATE)
-            df$wellCount <- 10
+            df$wellCount <- yearValues()$wellCount
             
 
             if(is.null(values$devPlan)){
@@ -3237,6 +3391,214 @@ shiny::shinyApp(
             df1 <- values$pudFcst %>% filter(id != id1)
             values$pudFcst <- df1
             
+        })
+        
+        output$pdpInstruct <- renderText({
+            if(input$pdpType == 'Production Only'){
+                'Please Load Date (monthly in MM/DD/YYYY format), Gross Oil/Month, Gross Gas/Month, Gross Water/Month'
+            } else {
+                'Please Load Date (monthly in MM/DD/YYYY format), Gross WI Oil/Month, Gross WI Wet Gas/Month,
+                Gross WI Sales Gas/Month, Gross WI NGL/Month, Gross WI Water/Month,
+                Net Oil/Month, Net Sales Gas/Month, Net NGL/Month,Operating Expense/Month,
+                Capital Expenditures/Month, P&A/Month'
+            }
+        })
+        
+        output$contents <- renderPlotly({
+            # input$file1 will be NULL initially. After the user selects
+            # and uploads a file, it will be a data frame with 'name',
+            # 'size', 'type', and 'datapath' columns. The 'datapath'
+            # column will contain the local filenames where the data can
+            # be found.
+            inFile <- input$file1
+            
+            if (is.null(inFile))
+                return(NULL)
+            
+            df <- read.csv(inFile$datapath, header = TRUE)
+            if(input$pdpType == 'Production Only'){
+                names(df) <- c('Date', 'Oil', 'Gas', 'Water')
+            } else {
+                names(df) <- c('Date', 'Oil', 'Gas', 'Sales_Gas', 'NGL', 'Water',
+                               'netOil', 'netGas', 'netNGL', 'expense',  'capex', 'pna')
+            }
+            #print(head(df))
+            df$Date <- anytime(df$Date)
+            df$Date <- paste0(month(df$Date),'/01/', year(df$Date))
+            df$Date <- anytime(df$Date)
+            
+            values$pdpCF <- df
+            if(input$pdpType == 'Production Only'){
+                names(df) <- c('DATE', 'OIL', 'GAS', 'WATER')
+            } else{
+                
+                names(df) <- c('DATE', 'WI OIL', 'WI GAS','WI SALES GAS', 'WI NGL','WI WATER',  
+                               'NET OIL', 'NET GAS', 'NET NGL', 'EXPENSE', 'CAPEX', 'P&A')
+            }
+            plotly::plot_ly(df %>% gather(Component, Value, -DATE),
+                            x=~DATE, y=~Value, color=~Component, type='scatter', mode='line')
+            
+            
+        })
+        
+        observe({
+            if(input$pdpType == 'Production Only'){
+                shinyjs::show('wiPDP')
+                shinyjs::show('nriPDP')
+                shinyjs::show('shrinkPDP')
+                shinyjs::show('nglYieldPDP')
+                shinyjs::show('btuPDP')
+                shinyjs::show('wellsPDP')
+                shinyjs::show('fixedPDP')
+                shinyjs::show('varOilPDP')
+                shinyjs::show('varGasPDP')
+                shinyjs::show('varWaterPDP')
+                shinyjs::show('varBOEPDP')
+                shinyjs::show('pnaPDP')
+            } else {
+                shinyjs::hide('wiPDP')
+                shinyjs::hide('nriPDP')
+                shinyjs::hide('shrinkPDP')
+                shinyjs::hide('nglYieldPDP')
+                shinyjs::hide('btuPDP')
+                shinyjs::hide('wellsPDP')
+                shinyjs::hide('fixedPDP')
+                shinyjs::hide('varOilPDP')
+                shinyjs::hide('varGasPDP')
+                shinyjs::hide('varWaterPDP')
+                shinyjs::hide('varBOEPDP')
+                shinyjs::hide('pnaPDP')
+            
+            }
+            
+            if(input$pdpPrice == 'Flat'){
+                shinyjs::show('wtiPDP')
+                shinyjs::show('hhPDP')
+                
+            } else {
+                shinyjs::hide('wtiPDP')
+                shinyjs::hide('hhPDP')
+            }
+        })
+        
+        output$pdpPlot <- renderPlotly({
+            if(is.null(values$pdpCF)){
+                NULL
+            } else {
+                df <- values$pdpCF# %>% filter(Date >= input$effDate)
+                if(input$pdpType == 'Production Only'){
+                   df$Oil <- df$Oil * expenseValues()$wiPDP/100 
+                   df$Gas <- df$Gas * expenseValues()$wiPDP/100
+                   df$Water <- df$Water * expenseValues()$wiPDP/100
+                   df$Sales_Gas <- df$Gas*expenseValues()$shrinkPDP*expenseValues()$btuPDP
+                   df$NGL <- df$Gas*expenseValues()$nglYieldPDP/1000  
+                   df$netOil <- df$Oil*expenseValues()$nriPDP/100
+                   df$netGas <- df$Sales_Gas*expenseValues()$nriPDP/100
+                   df$netNGL <- df$NGL*expenseValues()$nriPDP/100
+                   df$wells <- expenseValues()$wellsPDP*expenseValues()$wiPDP/100
+                   df1 <- df %>% filter(Date < input$effDate)
+                   df <- df %>% filter(Date >= input$effDate)
+                   wellDrop <- expenseValues()$wellsPDP*expenseValues()$wiPDP/100/(nrow(df)-1)
+                   df$wellDrop <- 0
+                   df$wellDrop[2:nrow(df)] <- wellDrop
+                   df$wells <- df$wells - cumsum(df$wellDrop)
+                   df$expense <- df$Oil * expenseValues()$varOilPDP +
+                       df$Gas * expenseValues()$varGasPDP + 
+                       df$Water * expenseValues()$varWaterPDP +
+                       (df$Oil + df$NGL)*expenseValues()$varBOEPDP +
+                       df$wells * expenseValues()$fixedPDP
+                   
+                   df$capex <- 0
+                   df$pna <- df$wellDrop * expenseValues()$pnaPDP
+                   df1$pna <- 0
+                   df1$expense <- df1$Oil * expenseValues()$varOilPDP +
+                       df1$Gas * expenseValues()$varGasPDP + 
+                       df1$Water * expenseValues()$varWaterPDP +
+                       (df1$Oil + df1$NGL)*expenseValues()$varBOEPDP +
+                       df1$wells * expenseValues()$fixedPDP
+                   df1$capex <- 0
+                   
+                   df <- df[,c('Date', 'Oil', 'Gas', 'Water', 'Sales_Gas', 'NGL',
+                               'netOil', 'netGas', 'netNGL', 'expense', 'capex', 'pna')]
+                   df1 <- df1[,names(df)]
+                   df <- rbind(df1, df)
+                } else {
+                    df <- df[,c('Date', 'Oil', 'Gas', 'Water', 'Sales_Gas', 'NGL',
+                                'netOil', 'netGas', 'netNGL', 'expense', 'capex', 'pna')]
+                }
+                values$pdpData <- df
+                df <- df %>% filter(Date >= input$effDate)
+                names(df) <- c('DATE', 'WI OIL', 'WI GAS', 'WI WATER', 'WI SALES GAS', 'WI NGL',
+                               'NET OIL', 'NET GAS', 'NET NGL', 'EXPENSE', 'CAPEX', 'P&A')
+                plotly::plot_ly(df %>% gather(Component, Value, -DATE),
+                                x=~DATE, y=~Value, color=~Component, type='scatter', mode='line')
+            }
+        })
+        
+        output$pdpPV <- renderText({
+            df <- values$pdpData %>% filter(Date >= input$effDate)
+            prices <- values$price
+            names(prices) <- c('Date', 'oilPrice', 'gasPrice')
+            prices <- as.data.frame(prices)
+            if(nrow(prices) > nrow(df)){
+                prices <- prices[1:nrow(df),]
+            }
+            df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+            df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+            
+            if(input$pdpPrice == 'Flat'){
+                df$oilPrice <- declineValues()$wtiPDP
+                df$gasPrice <- declineValues()$hhPDP
+                df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+            } else {
+                df <- as.data.frame(df)
+                #str(df$Date)
+                #str(prices$Date)
+                df <- merge(df, prices, by='Date', all.x=TRUE)
+                df <- as.data.frame(df)
+                #print(head(df))
+                
+                #rm(prices)
+                df$oilPrice[1:24][is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                df$gasPrice[1:24][is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                df$oilPrice <- na.locf(df$oilPrice)
+                df$gasPrice <- na.locf(df$gasPrice)
+                
+                print(head(df))
+                df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                #print(head(df))
+            }
+            
+            df$oilRev <- df$netOil * (df$oilPrice - expenseValues()$oilDiffPDP)
+            df$gasRev <- df$netGas * (df$gasPrice - expenseValues()$hhDiffPDP)
+            df$nglRev <- df$netNGL * (df$oilPrice * expenseValues()$nglDiffPDP/100)
+            df$revenue <- df$oilRev+df$gasRev+df$nglRev
+            #print(head(df))
+            df$tax <- df$oilRev*expenseValues()$stxOilPDP/100 +
+                (df$gasRev+df$nglRev)*expenseValues()$stxGasPDP/100 +
+                df$netOil*expenseValues()$oilSTXPDP + df$netGas/expenseValues()$shrinkPDP*expenseValues()$gasSTXPDP +
+                df$revenue*expenseValues()$atxPDP/100
+            #print(head(df))
+            df$nocf <- df$revenue - df$tax - df$expense
+            #print(head(df))
+            if(input$econLimitPDP == 'Yes'){
+                row1 <- max(which(df$nocf >= 0))+1
+                if(row1 >= nrow(df)){
+                    NULL
+                } else {
+                    pnaSum <- sum(df$pna[row1:nrow(df)])
+                    df$pna[(row1-1)] <- df$pna[(row1-1)]+pnaSum
+                    df <- df[1:(row1-1),]
+                }
+                
+            }
+            #print(head(df))
+            df$fcf <- df$nocf - df$capex - df$pna
+            
+            df$Months <- seq(0, nrow(df)-1, 1)
+            df$pv <- df$fcf/(1+expenseValues()$pdpDisc/100)^(df$Months/12)
+            
+            paste0('PDP NPV, M$: ', dollar(as.integer(sum(df$pv)/1000)))
         })
         
         output$tcInfo <- renderText({
@@ -3302,12 +3664,21 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$wellCount <- input$wellCount
+                df$wellCount <- yearValues()$wellCount
                 values$devPlan <- rbind(df, df1)
             }
         })
         
-        
+        yearValues <- reactive({
+            data.frame(
+                Component = c('yr1Dev', 'yr2Dev', 'yr3Dev', 'yr4Dev', 'yr5Dev', 'yr6Dev', 
+                              'yr7Dev', 'yr8Dev', 'yr9Dev', 'yr10Dev', 'wellCount'),
+                
+                Value = c(input$yr1Dev, input$yr2Dev, input$yr3Dev, input$yr4Dev, input$yr5Dev, input$yr6Dev,
+                          input$yr7Dev, input$yr8Dev, input$yr9Dev, input$yr10Dev, input$wellCount),
+                stringsAsFactors = FALSE) %>% spread(Component, Value)
+            
+        })
         
         
         observeEvent(input$yr1Dev, {
@@ -3317,7 +3688,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr1Dev <- input$yr1Dev
+                df$yr1Dev <- yearValues()$yr1Dev
                 values$devPlan <- rbind(df, df1)
             
                 
@@ -3331,7 +3702,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr2Dev <- input$yr2Dev
+                df$yr2Dev <- yearValues()$yr2Dev
                 values$devPlan <- rbind(df, df1)
   
             }
@@ -3344,7 +3715,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr3Dev <- input$yr3Dev
+                df$yr3Dev <- yearValues()$yr3Dev
                 values$devPlan <- rbind(df, df1)
 
             }
@@ -3357,7 +3728,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr4Dev <- input$yr4Dev
+                df$yr4Dev <- yearValues()$yr4Dev
                 values$devPlan <- rbind(df, df1)
 
             }
@@ -3370,7 +3741,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr5Dev <- input$yr5Dev
+                df$yr5Dev <- yearValues()$yr5Dev
                 values$devPlan <- rbind(df, df1)
 
             }
@@ -3383,7 +3754,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr6Dev <- input$yr6Dev
+                df$yr6Dev <- yearValues()$yr6Dev
                 values$devPlan <- rbind(df, df1)
 
             }
@@ -3396,7 +3767,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr7Dev <- input$yr7Dev
+                df$yr7Dev <- yearValues()$yr7Dev
                 values$devPlan <- rbind(df, df1)
       
             }
@@ -3409,7 +3780,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr8Dev <- input$yr8Dev
+                df$yr8Dev <- yearValues()$yr8Dev
                 values$devPlan <- rbind(df, df1)
                 
             }
@@ -3422,7 +3793,7 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr9Dev <- input$yr9Dev
+                df$yr9Dev <- yearValues()$yr9Dev
                 values$devPlan <- rbind(df, df1)
                 
             }
@@ -3435,82 +3806,84 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr10Dev <- input$yr10Dev
+                df$yr10Dev <- yearValues()$yr10Dev
                 values$devPlan <- rbind(df, df1)
             }
         })
         
         output$rem1 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev)
         })
         
         output$rem2 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev - input$yr2Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev - yearValues()$yr2Dev)
         })
         
         output$rem3 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev -
-                       input$yr2Dev - input$yr3Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev -
+                       yearValues()$yr2Dev - yearValues()$yr3Dev)
         })
         
         output$rem4 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev -
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev -
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev)
         })
         
         output$rem5 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev-
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                       input$yr5Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev-
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                       yearValues()$yr5Dev)
         })
         
         output$rem6 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev-
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                       input$yr5Dev - input$yr6Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev-
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                       yearValues()$yr5Dev - yearValues()$yr6Dev)
         })
         
         output$rem7 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev-
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                       input$yr5Dev - input$yr6Dev - input$yr7Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev-
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                       yearValues()$yr5Dev - yearValues()$yr6Dev - yearValues()$yr7Dev)
         })
         
         output$rem8 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev-
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                       input$yr5Dev - input$yr6Dev - input$yr7Dev -
-                       input$yr8Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev-
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                       yearValues()$yr5Dev - yearValues()$yr6Dev - yearValues()$yr7Dev -
+                       yearValues()$yr8Dev)
         })
         
         output$rem9 <- renderText({
-            paste0('Remaining Wells: ', input$wellCount - input$yr1Dev-
-                       input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                       input$yr5Dev - input$yr6Dev - input$yr7Dev -
-                       input$yr8Dev - input$yr9Dev)
+            paste0('Remaining Wells: ', yearValues()$wellCount - yearValues()$yr1Dev-
+                       yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                       yearValues()$yr5Dev - yearValues()$yr6Dev - yearValues()$yr7Dev -
+                       yearValues()$yr8Dev - yearValues()$yr9Dev)
         })
         
         output$rem10 <- renderText({
-            if(input$yr10Dev == 0){
+            if(input$yr10Dev == 0 || is.null(input$yr10Dev) || is.na(input$yr10Dev)){
                 'N/A'
             } else {
-                wells <- input$wellCount - input$yr1Dev-
-                           input$yr2Dev - input$yr3Dev - input$yr4Dev -
-                           input$yr5Dev - input$yr6Dev - input$yr7Dev -
-                           input$yr8Dev - input$yr9Dev
+                wells <- yearValues()$wellCount - yearValues()$yr1Dev-
+                           yearValues()$yr2Dev - yearValues()$yr3Dev - yearValues()$yr4Dev -
+                           yearValues()$yr5Dev - yearValues()$yr6Dev - yearValues()$yr7Dev -
+                           yearValues()$yr8Dev - yearValues()$yr9Dev
                 
-                wells <- as.integer(wells/input$yr10Dev*12)
+                wells <- as.integer(wells/yearValues()$yr10Dev*12)
                 paste0('Remaining Months: ', wells)
             }
         })
         
-        observe({
+        observeEvent(input$addFcst, {
             if(is.null(values$devPlan) || nrow(values$devPlan) == 0  || is.null(input$wellCount)){
                 values$pudFcst <- NULL
             } else {
+                updateButton(session, 'addFcst', label = 'Calculating...', style = 'danger')
                 #print(head(values$price))
                 dfx <- values$devPlan
-                
+                print(head(dfx))
+                dfx <- dfx[!duplicated(dfx),]
                 econSummary <- lapply(split(dfx, dfx[,'id']), function (well) tryCatch({
                     startDate1 <- data.frame(Month = seq(0, 30*12-1, 1))
                     startDate1$date <- min(well$startDate)
@@ -3526,14 +3899,17 @@ shiny::shinyApp(
                     startDate1$wells[73:84] <-well$yr7Dev/12
                     startDate1$wells[85:96] <-well$yr8Dev/12
                     startDate1$wells[97:108] <-well$yr9Dev/12
+                    startDate1$wells[109:nrow(startDate1)] <- well$yr10Dev/12
                     if(well$yr10Dev == 0){
                         startDate1 <- startDate1 %>% filter(wells != 0)
                     } else {
-                        remMonths <- as.integer((well$wellCount - sum(startDate1$wells))/well$yr10Dev)*12-1
-                        startDate1$wells[109:(109+remMonths)] <- well$yr10Dev/12
-                        startDate1 <- startDate1 %>% filter(wells != 0)
+                        startDate1 <- startDate1 %>% filter(cumsum(wells) <= well$wellCount)
+                        
+                        startDate1 <- startDate1 %>% filter(wells != 0) %>% filter(!is.na(wells))
                         missingWells <- well$wellCount - sum(startDate1$wells)
-                        startDate1$wells[nrow(startDate1)] <- startDate1$wells[nrow(startDate1)] + missingWells
+                        print(missingWells)
+                        #startDate1$wells[nrow(startDate1)] <- startDate1$wells[nrow(startDate1)] + missingWells
+                        
                     }
                     startDate1$id <- well$id
                     startDate1$id2 <- paste0(startDate1$id,startDate1$date)
@@ -3548,7 +3924,7 @@ shiny::shinyApp(
                 )
                 
                 dfx <- dplyr::bind_rows(econSummary)
-                
+                dfx <- dfx[!duplicated(dfx),]
                 prices <- values$price
                 names(prices) <- c('Date', 'oilPrice', 'gasPrice')
                 prices <- as.data.frame(prices)
@@ -3623,10 +3999,12 @@ shiny::shinyApp(
                             #print(head(df))
     
                             #rm(prices)
+                            df$oilPrice[1:24][is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                            df$gasPrice[1:24][is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
                             df$oilPrice <- na.locf(df$oilPrice)
                             df$gasPrice <- na.locf(df$gasPrice)
-                            df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
-                            df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                            #df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                            #df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
     
                             df$nglPrice <- df$oilPrice*df1$discNGL/100
                             #print(head(df))
@@ -3777,14 +4155,14 @@ shiny::shinyApp(
                     )
                     
                     df <- dplyr::bind_rows(econSummary)
-                    
+                    df <- df[!duplicated(df),]
                     if(nrow(df) == 0){
                         values$pudFcst <- NULL
                     } else {
                         df$wells <- df$wi/100
-                        df$netOil <- df$Oil*df$wi/100*df$nri/100
-                        df$netGas <- df$Sales_Gas*df$wi/100*df$nri/100
-                        df$netNGL <- df$NGL*df$wi/100*df$nri/100
+                        df$netOil <- df$Oil*df$nri/100
+                        df$netGas <- df$Sales_Gas*df$nri/100
+                        df$netNGL <- df$NGL*df$nri/100
                         df$oilPrice[df$oilPrice == 0] <- NA
                         df$gasPrice[df$gasPrice == 0] <- NA
                         df$nglPrice[df$nglPrice == 0] <- NA
@@ -3803,7 +4181,7 @@ shiny::shinyApp(
                 }
                 
                 }
-            
+            updateButton(session, 'addFcst', label = 'Add to Forecast', style = 'primary')
             
             
         })
@@ -3812,19 +4190,233 @@ shiny::shinyApp(
             if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
                 NULL
             } else {
-                df <- values$pudFcst %>% group_by(Date) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
-                                                                       Water = as.integer(sum(Water)),  as.integer(netOil = sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
-                                                                       oilPrice = scales::dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = scales::dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = scales::dollar(mean(nglPrice, na.rm=TRUE)),
-                                                                       oilRev = scales::dollar(as.integer(sum(oilRev))), gasRev = scales::dollar(as.integer(sum(gasRev))),nglRev = scales::dollar(as.integer(sum(nglRev))), 
-                                                                       revenue = scales::dollar(as.integer(sum(revenue))), tax = scales::dollar(as.integer(sum(tax))), expense = scales:dollar(as.integer(sum(expense))), 
-                                                                       nocf= scales::dollar(as.integer(sum(nocf))), capex = scales::dollar(as.integer(sum(capex))), pna = scales::dollar(as.integer(sum(pna))), fcf = scales::dollar(as.integer(sum(fcf))),
-                                                                       wells = as.integer(sum(wells)))
+                if(is.null(values$pdpData)){
                 
-                names(df) <- c('DATE', 'OIL, BBL', 'GAS, MCF', 'SALES_GAS, MCF', 'NGL, BBL', 'WATER, BBL', 'NET OIL, BBL', 'NET GAS, MCF', 'NET NGL, BBL', 'OIL PRICE, $', 'GAS PRICE, $', 'NGL PRICE, $', 'OIL REVENUE, $',
+                    
+                    df <- values$pudFcst %>% group_by(Date) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
+                                                                           Water = as.integer(sum(Water)),  netOil = as.integer(sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
+                                                                           oilPrice = dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = dollar(mean(nglPrice, na.rm=TRUE)),
+                                                                           oilRev = dollar(as.integer(sum(oilRev))), gasRev = dollar(as.integer(sum(gasRev))),nglRev = dollar(as.integer(sum(nglRev))), 
+                                                                           revenue = dollar(as.integer(sum(revenue))), tax = dollar(as.integer(sum(tax))), expense = dollar(as.integer(sum(expense))), 
+                                                                           nocf= dollar(as.integer(sum(nocf))), capex = dollar(as.integer(sum(capex))), pna = dollar(as.integer(sum(pna))), fcf = dollar(as.integer(sum(fcf))),
+                                                                           wells = as.integer(sum(wells)))
+                } else {
+                    
+                        df <- values$pdpData %>% filter(Date >= input$effDate)
+                        prices <- values$price
+                        names(prices) <- c('Date', 'oilPrice', 'gasPrice')
+                        prices <- as.data.frame(prices)
+                        df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+                        df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+                        #print(head(df))
+                        if(input$priceSelection == 'Flat'){
+                            df$oilPrice <- declineValues()$wtiDev
+                            df$gasPrice <- declineValues()$hhDev
+                            df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                        } else {
+                            df <- as.data.frame(df)
+                            #str(df$Date)
+                            #str(prices$Date)
+                            df <- merge(df, prices, by='Date', all.x=TRUE)
+                            df <- as.data.frame(df)
+                            #print(head(df))
+                            
+                            #rm(prices)
+                            df$oilPrice[1:24][is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                            df$gasPrice[1:24][is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                            df$oilPrice <- na.locf(df$oilPrice)
+                            df$gasPrice <- na.locf(df$gasPrice)
+                            #df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                            #df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                            
+                            df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                            #print(head(df))
+                        }
+                        df$oilRev <- df$netOil * (df$oilPrice - expenseValues()$oilDiffPDP)
+                        df$gasRev <- df$netGas * (df$gasPrice - expenseValues()$hhDiffPDP)
+                        df$nglRev <- df$netNGL * (df$oilPrice * expenseValues()$nglDiffPDP/100)
+                        df$revenue <- df$oilRev+df$gasRev+df$nglRev
+                        #print(head(df))
+                        df$tax <- df$oilRev*expenseValues()$stxOilPDP/100 +
+                            (df$gasRev+df$nglRev)*expenseValues()$stxGasPDP/100 +
+                            df$netOil*expenseValues()$oilSTXPDP + df$netGas/expenseValues()$shrinkPDP*expenseValues()$gasSTXPDP +
+                            df$revenue*expenseValues()$atxPDP/100
+                        #print(head(df))
+                        df$nocf <- df$revenue - df$tax - df$expense
+                        #print(head(df))
+                        if(input$econLimitPDP == 'Yes'){
+                            row1 <- max(which(df$nocf >= 0))+1
+                            if(row1 >= nrow(df)){
+                                NULL
+                            } else {
+                                pnaSum <- sum(df$pna[row1:nrow(df)])
+                                df$pna[(row1-1)] <- df$pna[(row1-1)]+pnaSum
+                                df <- df[1:(row1-1),]
+                            }
+                            
+                        }
+                        #print(head(df))
+                        df$fcf <- df$nocf - df$capex - df$pna
+                        
+                        df <- df[,c('Date', 'Oil', 'Gas', 'Sales_Gas', 'NGL', 'Water',
+                                    'netOil', 'netGas', 'netNGL', 'oilPrice', 'gasPrice', 'nglPrice',
+                                    'oilRev', 'gasRev', 'nglRev', 'revenue', 'tax', 'expense', 'nocf', 'capex', 'pna', 'fcf')]
+                        
+                        df$wells <- expenseValues()$wellsPDP
+                        df$id <- 'PDP'
+                        df1 <- df
+                        df <- values$pudFcst
+                        df <- as.data.frame(df)
+                        df1 <- as.data.frame(df1)
+                        df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+                        df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+                        df1$Date <- paste0(year(df1$Date),'-',month(df1$Date), '-01')
+                        df1$Date <- as.POSIXct(df1$Date, format = '%Y-%m-%d')
+                        #print(head(df))
+                        #print(head(df1))
+                        df1 <- df1[,names(df)]
+                        df <- rbind(df1, df)
+                        df$Date <- as.Date(df$Date)
+                        df <- df%>% group_by(Date) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
+                                                                               Water = as.integer(sum(Water)),  netOil = as.integer(sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
+                                                                               oilPrice = dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = dollar(mean(nglPrice, na.rm=TRUE)),
+                                                                               oilRev = dollar(as.integer(sum(oilRev))), gasRev = dollar(as.integer(sum(gasRev))),nglRev = dollar(as.integer(sum(nglRev))), 
+                                                                               revenue = dollar(as.integer(sum(revenue))), tax = dollar(as.integer(sum(tax))), expense = dollar(as.integer(sum(expense))), 
+                                                                               nocf= dollar(as.integer(sum(nocf))), capex = dollar(as.integer(sum(capex))), pna = dollar(as.integer(sum(pna))), fcf = dollar(as.integer(sum(fcf))),
+                                                                               wells = as.integer(sum(wells)))
+                        
+                        
+                    
+                }
+                
+                names(df) <- c('DATE', 'OIL, BBL', 'GAS, MCF', 'SALES GAS, MCF', 'NGL, BBL', 'WATER, BBL', 'NET OIL, BBL', 'NET GAS, MCF', 'NET NGL, BBL', 'OIL PRICE, $', 'GAS PRICE, $', 'NGL PRICE, $', 'OIL REVENUE, $',
                                'GAS REVENUE, $', 'NGL REVENUE, $', 'TOTAL REVENUE, $', 'TAXES, $', 'OPERATING EXPENSE, $', 'NET OPERATING CASH FLOW, $', 'CAPITAL EXPENDITURES, $', 'P&A, $', 'FREE CASH FLOW, $', 'NET WELLS')
-                
-                DT::datatable(df, rownames = FALSE)
+                DT::datatable(df, rownames = FALSE,
+                              extensions = c('Buttons', 'Scroller'), 
+                              options = list(
+                                  dom = 'Bfrtip',
+                                  scrollX = TRUE,
+                                  scrollY = FALSE,
+                                  deferRender = TRUE,
+                                  paging = FALSE,
+                                  searching = FALSE,
+                                  buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                              ))  
+
             }
+        })
+        
+        output$cfGraph <- renderPlotly({
+            if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
+                NULL
+            } else {
+                
+                if(is.null(values$pdpData)){
+                    
+                
+                df <- values$pudFcst %>% mutate(netBOE = netOil + netGas/6 + netNGL, netMCFE = netOil/6+netGas + netNGL/6)
+                } else {
+                    df <- values$pdpData %>% filter(Date >= input$effDate)
+                    prices <- values$price
+                    names(prices) <- c('Date', 'oilPrice', 'gasPrice')
+                    prices <- as.data.frame(prices)
+                    df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+                    df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+                    #print(head(df))
+                    if(input$priceSelection == 'Flat'){
+                        df$oilPrice <- declineValues()$wtiDev
+                        df$gasPrice <- declineValues()$hhDev
+                        df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                    } else {
+                        df <- as.data.frame(df)
+                        #str(df$Date)
+                        #str(prices$Date)
+                        df <- merge(df, prices, by='Date', all.x=TRUE)
+                        df <- as.data.frame(df)
+                        #print(head(df))
+                        
+                        #rm(prices)
+                        df$oilPrice[1:24][is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                        df$gasPrice[1:24][is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                        df$oilPrice <- na.locf(df$oilPrice)
+                        df$gasPrice <- na.locf(df$gasPrice)
+                        #df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                        #df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                        
+                        df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                        #print(head(df))
+                    }
+                    df$oilRev <- df$netOil * (df$oilPrice - expenseValues()$oilDiffPDP)
+                    df$gasRev <- df$netGas * (df$gasPrice - expenseValues()$hhDiffPDP)
+                    df$nglRev <- df$netNGL * (df$oilPrice * expenseValues()$nglDiffPDP/100)
+                    df$revenue <- df$oilRev+df$gasRev+df$nglRev
+                    #print(head(df))
+                    df$tax <- df$oilRev*expenseValues()$stxOilPDP/100 +
+                        (df$gasRev+df$nglRev)*expenseValues()$stxGasPDP/100 +
+                        df$netOil*expenseValues()$oilSTXPDP + df$netGas/expenseValues()$shrinkPDP*expenseValues()$gasSTXPDP +
+                        df$revenue*expenseValues()$atxPDP/100
+                    #print(head(df))
+                    df$nocf <- df$revenue - df$tax - df$expense
+                    #print(head(df))
+                    if(input$econLimitPDP == 'Yes'){
+                        row1 <- max(which(df$nocf >= 0))+1
+                        if(row1 >= nrow(df)){
+                            NULL
+                        } else {
+                            pnaSum <- sum(df$pna[row1:nrow(df)])
+                            df$pna[(row1-1)] <- df$pna[(row1-1)]+pnaSum
+                            df <- df[1:(row1-1),]
+                        }
+                        
+                    }
+                    #print(head(df))
+                    df$fcf <- df$nocf - df$capex - df$pna
+                    
+                    df <- df[,c('Date', 'Oil', 'Gas', 'Sales_Gas', 'NGL', 'Water',
+                                'netOil', 'netGas', 'netNGL', 'oilPrice', 'gasPrice', 'nglPrice',
+                                'oilRev', 'gasRev', 'nglRev', 'revenue', 'tax', 'expense', 'nocf', 'capex', 'pna', 'fcf')]
+                    
+                    df$wells <- expenseValues()$wellsPDP
+                    df$id <- 'PDP'
+                    df1 <- df
+                    df <- values$pudFcst
+                    df <- as.data.frame(df)
+                    df1 <- as.data.frame(df1)
+                    df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+                    df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+                    df1$Date <- paste0(year(df1$Date),'-',month(df1$Date), '-01')
+                    df1$Date <- as.POSIXct(df1$Date, format = '%Y-%m-%d')
+                    #print(head(df))
+                    #print(head(df1))
+                    df1 <- df1[,names(df)]
+                    df <- rbind(df1, df)
+                    df$Date <- as.Date(df$Date)
+                    df <- df %>% mutate(netBOE = netOil + netGas/6 + netNGL, netMCFE = netOil/6+netGas + netNGL/6)
+                    
+                }
+                
+                
+                df <- df %>% gather(Component, Value, -c(Date, id)) %>% filter(Component == input$graphSelect)
+                
+                plot_ly(df, x = ~Date, y = ~Value, name = ~id, type = 'scatter', mode = 'none', stackgroup = 'one', fillcolor = ~id) %>%
+                    layout(title = 'Metric By Type-Curve',
+                           xaxis = list(title = "",
+                                        showgrid = FALSE),
+                           yaxis = list(title = "Volume in Monthly BOE/MCFE, Values in $'s",
+                                        showgrid = FALSE))
+            }
+            
+            # df %>% group_by(id) %>% arrange(Date) %>% mutate(Value = cumsum(Value)) %>% 
+            #     plot_ly(type = 'scatter', x = ~Date, y = ~Value, color = ~id, 
+            #             mode = 'lines', fill = 'tonexty')%>%
+            #     layout(title = 'Metric By Type-Curve',
+            #            xaxis = list(title = "",
+            #                         showgrid = FALSE),
+            #            yaxis = list(title = "Volume in Monthly BBLS/MCF, Values in $'s",
+            #                         showgrid = FALSE))
+            
+            
+            
         })
         
     }
