@@ -32,18 +32,22 @@ library(scales)
 library(purrr)
 
 
-api_key <- "YD0LELAB40MThlu12RlH3WVZl"
-api_secret_key <- "DgFSQcNJQlVPA1kFHSusITTRej9Fa4TIFs4Ea98FYRxIcGeOZ7"
-access_token <- "26022505-ZaOSEs58RDXz8EuuOcaLxunNwjKv9JHZhmGt8Ubg3"
-access_token_secret <- "Zys1kmkfYDcTTYPJ8G2vXu6kNp4iLdMlvB46vqIwwOfWT"
-## authenticate via web browser
-token <- create_token(
-    app = "enFinExplorer",
-    consumer_key = api_key,
-    consumer_secret = api_secret_key,
-    access_token = access_token,
-    access_secret = access_token_secret)
-
+css <- HTML(
+    "#pdpTable > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody {
+  transform:rotateX(180deg);
+  }
+  #pdpTable > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody table{
+  transform:rotateX(180deg);
+   }"
+)
+css1 <- HTML(
+    "#pudFcst > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody {
+  transform:rotateX(180deg);
+  }
+  #pudFcst > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody table{
+  transform:rotateX(180deg);
+   }"
+)
 options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
@@ -854,7 +858,7 @@ shiny::shinyApp(
         
         title = "EnFinExplorer",
         enable_preloader = TRUE,
-        loading_duration = 1,
+        loading_duration = 2,
         navbar = tablerDashNav(
             id = "mymenu",
             src = "rig.png",
@@ -863,13 +867,18 @@ shiny::shinyApp(
                 tablerNavMenuItem(
                     tabName = "home",
                     icon = "home",
-                    "Company Analysis"
+                    "Home"
                 ),
                 tablerNavMenuItem(
-                    tabName = 'twitter',
-                    icon = 'twitter',
-                    'Twitter'
+                    tabName = "comp",
+                    icon = "box",
+                    "Company Analysis"
                 ),
+                # tablerNavMenuItem(
+                #     tabName = 'twitter',
+                #     icon = 'twitter',
+                #     'Twitter'
+                # ),
                 tablerNavMenuItem(
                     tabName = "Options",
                     icon = "box",
@@ -954,11 +963,25 @@ shiny::shinyApp(
         body = tablerDashBody(
             
             
-            setZoom(class = "card"),
+            #setZoom(class = "card"),
             chooseSliderSkin("Nice"),
             useShinyjs(),
             tablerTabItems(
                 tablerTabItem('home',
+                              fluidRow(
+                                  column(12,
+                                         
+                                         tablerCard(
+                                             title = 'Strip Pricing',
+                                             closable = FALSE,
+                                             zoomable = TRUE,
+                                             width = 12,
+                                             echarts4rOutput('stripPrice')
+                                         )
+                                  )
+                              )
+                ),
+                tablerTabItem('comp',
                               selectizeInput('operatorSelect', 'Select Operator', choices = opList1),
                               fluidRow(
                                   column(6,
@@ -975,47 +998,38 @@ shiny::shinyApp(
                                          
                                          
                                   ),
-                                  column(6,
-                                  
-                                      tablerCard(
-                                          title = 'Strip Pricing',
-                                          closable = FALSE,
-                                          zoomable = TRUE,
-                                          width = 12,
-                                          echarts4rOutput('stripPrice')
-                                      )
+                                      column(6,
+                                             tablerCard(
+                                                 title = 'S&P 500 Benchmarking',
+                                                 closable = FALSE,
+                                                 zoomable = FALSE,
+                                                 collapsed = FALSE,
+                                                 width = 12,
+                                                 dateInput(inputId = 'start_date1', label = 'Start Date', value = '2019-01-01'),
+                                                 multiInput('operatorSelect1', 'Select Operators', choices = opList1, selected = 'APA'),
+                                                 
+                                                 echarts4rOutput('hcplot1')
+                                                 
+                                             )
                                       )
                                   ),
-                              fluidRow(
-                                  column(12,
-                                         tablerCard(
-                                             title = 'S&P 500 Benchmarking',
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-                                             dateInput(inputId = 'start_date1', label = 'Start Date', value = '2019-01-01'),
-                                             multiInput('operatorSelect1', 'Select Operators', choices = opList1, selected = 'APA'),
-                                             
-                                             echarts4rOutput('hcplot1')
-                                             
-                                         )
-                                  )
-                              ),
                               
-                             fluidRow(
-                                 column(12,
-                                     tablerCard(
-                                         title = icon('twitter'),
-                                         closable = FALSE,
-                                         zoomable = FALSE,
-                                         collapsed = FALSE,
-                                         width = 12,
-                                         DT::dataTableOutput('tweets')
-                                     )
-                                 )
-      
-                              ),
+                                  
+                             
+                             #  
+                             # fluidRow(
+                             #     column(12,
+                             #         tablerCard(
+                             #             title = icon('twitter'),
+                             #             closable = FALSE,
+                             #             zoomable = FALSE,
+                             #             collapsed = FALSE,
+                             #             width = 12,
+                             #             DT::dataTableOutput('tweets')
+                             #         )
+                             #     )
+                             # 
+                             #  ),
                               fluidRow(
                                   column(12,
                                          tablerCard(
@@ -1174,14 +1188,14 @@ shiny::shinyApp(
                                   
                               
                               ),
-                tablerTabItem(
-                    tabName = 'twitter',
-                    fluidRow(
-                        column(width = 12,
-                         uiOutput('embedded_user_tweets')
-                        )
-                    )
-                ),
+                # tablerTabItem(
+                #     tabName = 'twitter',
+                #     fluidRow(
+                #         column(width = 12,
+                #          uiOutput('embedded_user_tweets')
+                #         )
+                #     )
+                # ),
                 
                 tablerTabItem(
                     tabName = "Options",
@@ -1388,6 +1402,7 @@ shiny::shinyApp(
                                 numericInput('varOilExp', 'Variable Expense/BBL Oil', 2, min = 0),
                                 numericInput('varGasExp', 'Variable Expense/MCF Gas', 0.25, min = 0),
                                 numericInput('varWaterExp', 'Variable Expense/BBL Water', 2, min = 0),
+                                numericInput('varBOEExp', 'Variable Expense/BBL Oil + NGL', 2, min = 0),
                                 numericInput('wrkExp', 'Workover Expense/Month', 750, min = 0)
                                 
                                 
@@ -1397,6 +1412,7 @@ shiny::shinyApp(
                 ),
                 tablerTabItem(
                     tabName = "pdp",
+                    tags$head(tags$style(css)),
                     fluidRow(
                         column(3,
                                tablerCard(
@@ -1411,7 +1427,24 @@ shiny::shinyApp(
                                                 status = 'primary')
                                    
                                      
-                               )),
+                               ),
+                               tablerCard(
+                                   title = 'Basic Assumptions',
+                                   closable = FALSE,
+                                   zoomable = TRUE,
+                                   width = 12,
+                                   dateInput('effDate', 'Effective Date'),
+                                   numericInput('wiPDP', 'WI %', value =100, min = 1, max = 100),
+                                   numericInput('nriPDP', 'NRI % (to the 100%)', value =75, min = 1, max = 100),
+                                   numericInput('pnaPDP', 'P&A Per Well, $', value = 20000, min = 1),
+                                   numericInput('pdpDisc', 'PDP Discount Rate, %', value = 10, min =0, max = 30),
+                                   awesomeRadio('econLimitPDP',
+                                                'Economic Limit Cutoff?',
+                                                choices = c('Yes', 'No'),
+                                                selected = 'Yes',
+                                                status = 'primary')
+                               )
+                               ),
                         column(6,
                                tablerCard(
                                 title = 'Data Load',
@@ -1436,32 +1469,10 @@ shiny::shinyApp(
                                    width = 12,
                                    plotlyOutput('pdpPlot'),
                                    textOutput('pdpPV')
-                               ),
-                               tablerCard(
-                                   title = 'PDP Cash Flow Summary',
-                                   closable = FALSE,
-                                   zoomable = FALSE,
-                                   width = 12,
-                                   DT::dataTableOutput('pdpTable')
                                )
                         ),
                         column(3,
-                               tablerCard(
-                                   title = 'Basic Assumptions',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   dateInput('effDate', 'Effective Date'),
-                                   numericInput('wiPDP', 'WI %', value =100, min = 1, max = 100),
-                                   numericInput('nriPDP', 'NRI % (to the 100%)', value =75, min = 1, max = 100),
-                                   numericInput('pnaPDP', 'P&A Per Well, $', value = 20000, min = 1),
-                                   numericInput('pdpDisc', 'PDP Discount Rate, %', value = 10, min =0, max = 30),
-                                   awesomeRadio('econLimitPDP',
-                                                'Economic Limit Cutoff?',
-                                                choices = c('Yes', 'No'),
-                                                selected = 'Yes',
-                                                status = 'primary')
-                                          ),
+                               
                                tablerCard(
                                    title = 'Revenue Assumptions',
                                    closable = FALSE,
@@ -1506,13 +1517,26 @@ shiny::shinyApp(
                                    numericInput('atxPDP', 'Ad Val % Revenue', 2.5, min = 0, max = 20)
                                )
                                )
-                    )
+                    ),
+                    fluidRow(
+                        column(12,
+                                    
+                                    tablerCard(
+                                        title = 'PDP Cash Flow Summary',
+                                        closable = FALSE,
+                                        zoomable = FALSE,
+                                        width = 12,
+                                        
+                                        DT::dataTableOutput('pdpTable')
+                                        
+                                    )))
                     
                     
                 ),
                 
                 tablerTabItem(
                     tabName = 'devPlan',
+                    tags$head(tags$style(css1)),
                     fluidRow(
                         column(3,
                                tablerCard(
@@ -1638,9 +1662,6 @@ shiny::shinyApp(
         
         values <- reactiveValues()
         
-        
-        
-        
         output$news <- DT::renderDataTable({
             comp.ticker <- input$operatorSelect
             comp.name <- finreportr::CompanyInfo(comp.ticker)
@@ -1663,82 +1684,68 @@ shiny::shinyApp(
                                          lengthMenu = c(5, 10, 15, 20)))
         })
         
-        output$tweets <- DT::renderDataTable({
-            q <- paste0('$',input$operatorSelect)
-            #print(q)
-            rt <- search_tweets(q, geocode = lookup_coords('usa'), n = 18000, token = token)
-            rt <- as.data.frame(rt)
-            
-            rt <- rt %>% arrange(desc(retweet_count))
-            rt <- rt %>% filter(grepl('Twitter', source))
-            rt <- rt %>% filter(is_retweet == FALSE)
-            rt$hashCount <- str_count(rt$text, '\\$')
-            rt <- rt %>% filter(hashCount <= 3)
-            #rt <- rt %>% filter(favorite_count > 0)
-            #rt <- rt %>% filter(retweet_count > 0)
-            rt <- rt %>% filter(screen_name != 'shortvolumes') %>% 
-                filter(screen_name != 'Tickeron') %>%
-                filter(screen_name != 'OptionsPastor') %>%
-                filter(screen_name != 'InfinitusCap')%>%
-                filter(screen_name != 'VegasTours')%>%
-                filter(screen_name != 'stockspastor')%>%
-                filter(screen_name != 'CarmichaelLeval')%>%
-                filter(screen_name != 'GingerRoelofs')%>%
-                filter(screen_name != 'AlertTrade')%>%
-                filter(screen_name != 'Gambiste1') %>% 
-                filter(screen_name != 'UPBOptionMil')%>%
-                filter(screen_name != 'r_wallstreet_')%>%
-                filter(screen_name != 'mscullion')%>%
-                filter(screen_name != 'oilbot123')%>%
-                filter(screen_name != '15minofPham')%>%
-                filter(screen_name != 'TeresaTrades')%>%
-                filter(screen_name != 'tastytraderMike')%>%
-                filter(screen_name != 'winthrop317')%>%
-                filter(screen_name != 'BearBullTraders') %>%
-                filter(screen_name != 'TheBurdetteLawF') %>%
-                filter(screen_name != 'apbeaton') %>%
-                filter(screen_name != 'MDLive4') %>%
-                filter(screen_name != 'msectors') %>%
-                filter(screen_name != 'CarlosmBBT') %>%
-                filter(screen_name != 'stickycactusink')
-            
-            if(nrow(rt) == 0){
-                NULL
-            } else {
-                rt <- rt %>% filter(!duplicated(text))
-                values$tweets <- rt
-                rt <- rt[,c('profile_image_url', 'screen_name', 'text', 'created_at')]
-                
-                #rt$profile_image_url <- img(src=rt$profile_image_url)
-                rt <- rt %>% mutate(image = paste0('<img src ="', profile_image_url, '" height = "52"></img>'))
-                rt <- rt[,c('image', 'screen_name', 'text', 'created_at')]
-                rt$screen_name <- paste0("<a target='_blank' href='",paste0('https://twitter.com/', rt$screen_name),"'>",rt$screen_name,"</a>")
-                rt$created_at <- as.Date(rt$created_at)
-                #rt$screen_name <- a(rt$screen_name, href=paste0('https://twitter.com/', rt$screen_name))
-                #print(head(rt))
-                names(rt) <- c('', '', '', '')
-                
-                DT::datatable(rt, rownames = FALSE, escape = FALSE,extensions = c('Buttons', 'ColReorder', 'FixedHeader','KeyTable',  'Scroller'),
-                              options = list(pageLength = 10,
-                                             lengthMenu = c(5, 10, 15)))
-            }
-            
-        })
-        # user_tweets <- reactive({
-        #     values$tweets %>%
-        #         #filter(screen_name == input$user_name) %>%
-        #         select(status_url, created_at, favorite_count, retweet_count)
+        # output$tweets <- DT::renderDataTable({
+        #     q <- paste0('$',input$operatorSelect)
+        #     #print(q)
+        #     rt <- search_tweets(q, geocode = lookup_coords('usa'), n = 18000, token = token)
+        #     rt <- as.data.frame(rt)
+        #     
+        #     rt <- rt %>% arrange(desc(retweet_count))
+        #     rt <- rt %>% filter(grepl('Twitter', source))
+        #     rt <- rt %>% filter(is_retweet == FALSE)
+        #     rt$hashCount <- str_count(rt$text, '\\$')
+        #     rt <- rt %>% filter(hashCount <= 3)
+        #     #rt <- rt %>% filter(favorite_count > 0)
+        #     #rt <- rt %>% filter(retweet_count > 0)
+        #     rt <- rt %>% filter(screen_name != 'shortvolumes') %>% 
+        #         filter(screen_name != 'Tickeron') %>%
+        #         filter(screen_name != 'OptionsPastor') %>%
+        #         filter(screen_name != 'InfinitusCap')%>%
+        #         filter(screen_name != 'VegasTours')%>%
+        #         filter(screen_name != 'stockspastor')%>%
+        #         filter(screen_name != 'CarmichaelLeval')%>%
+        #         filter(screen_name != 'GingerRoelofs')%>%
+        #         filter(screen_name != 'AlertTrade')%>%
+        #         filter(screen_name != 'Gambiste1') %>% 
+        #         filter(screen_name != 'UPBOptionMil')%>%
+        #         filter(screen_name != 'r_wallstreet_')%>%
+        #         filter(screen_name != 'mscullion')%>%
+        #         filter(screen_name != 'oilbot123')%>%
+        #         filter(screen_name != '15minofPham')%>%
+        #         filter(screen_name != 'TeresaTrades')%>%
+        #         filter(screen_name != 'tastytraderMike')%>%
+        #         filter(screen_name != 'winthrop317')%>%
+        #         filter(screen_name != 'BearBullTraders') %>%
+        #         filter(screen_name != 'TheBurdetteLawF') %>%
+        #         filter(screen_name != 'apbeaton') %>%
+        #         filter(screen_name != 'MDLive4') %>%
+        #         filter(screen_name != 'msectors') %>%
+        #         filter(screen_name != 'CarlosmBBT') %>%
+        #         filter(screen_name != 'stickycactusink')
+        #     
+        #     if(nrow(rt) == 0){
+        #         NULL
+        #     } else {
+        #         rt <- rt %>% filter(!duplicated(text))
+        #         values$tweets <- rt
+        #         rt <- rt[,c('profile_image_url', 'screen_name', 'text', 'created_at')]
+        #         
+        #         #rt$profile_image_url <- img(src=rt$profile_image_url)
+        #         rt <- rt %>% mutate(image = paste0('<img src ="', profile_image_url, '" height = "52"></img>'))
+        #         rt <- rt[,c('image', 'screen_name', 'text', 'created_at')]
+        #         rt$screen_name <- paste0("<a target='_blank' href='",paste0('https://twitter.com/', rt$screen_name),"'>",rt$screen_name,"</a>")
+        #         rt$created_at <- as.Date(rt$created_at)
+        #         #rt$screen_name <- a(rt$screen_name, href=paste0('https://twitter.com/', rt$screen_name))
+        #         #print(head(rt))
+        #         names(rt) <- c('', '', '', '')
+        #         
+        #         DT::datatable(rt, rownames = FALSE, escape = FALSE,extensions = c('Buttons', 'ColReorder', 'FixedHeader','KeyTable',  'Scroller'),
+        #                       options = list(pageLength = 10,
+        #                                      lengthMenu = c(5, 10, 15)))
+        #     }
+        #     
         # })
-        # 
-        output$embedded_user_tweets <- renderUI({
-            tweets <- as.data.frame(values$tweets)[1,]
-            tweets <- tweets %>% select(status_url, created_at, favorite_count, retweet_count)
-            #print(head(tweets))
-            tweetsTag <- tagList(map(transpose(tweets), embed_tweet), 
-                    tags$script('twttr.widgets.load(document.getElementById("tweets"));'))
-            htmltools::doRenderTags(tweetsTag)
-        }) 
-        
+
         output$hcplot <- renderEcharts4r({
             ticker <- input$operatorSelect
             stock <- getSymbols(ticker, src='yahoo', auto.assign = FALSE, setSymbolLookup('stock'))
@@ -2931,6 +2938,36 @@ shiny::shinyApp(
                 shinyjs::show('hidePrice')
                 shinyjs::hide('wti')
                 shinyjs::hide('hh')
+                
+                crude <-'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=RWTC&f=M'
+                webpage <- read_html(crude)
+                tbls_ls <- webpage %>%
+                    html_nodes('table') %>%
+                    .[5] %>%
+                    html_table(fill = TRUE)
+                wti1 <- tbls_ls[[1]]
+                wti1 <- wti1 %>% filter(!is.na(Jan))
+                
+                wti1 <- wti1 %>% gather(DATE, WTI, -c(Year))
+                wti1 <- wti1 %>% mutate(DATE = paste0(DATE,'/01/', Year))
+                wti1$DATE <- as.POSIXct(wti1$DATE, format = '%b/%d/%Y')
+                wti1 <- wti1 %>% arrange(DATE) %>% select(DATE, WTI)
+                
+                crude <-'https://www.eia.gov/dnav/ng/hist/rngwhhdm.htm'
+                webpage <- read_html(crude)
+                tbls_ls <- webpage %>%
+                    html_nodes('table') %>%
+                    .[5] %>%
+                    html_table(fill = TRUE)
+                hh1 <- tbls_ls[[1]]
+                hh1 <- hh1 %>% filter(!is.na(Jan))
+                
+                hh1 <- hh1 %>% gather(DATE, HH, -c(Year))
+                hh1 <- hh1 %>% mutate(DATE = paste0(DATE,'/01/', Year))
+                hh1$DATE <- as.POSIXct(hh1$DATE, format = '%b/%d/%Y')
+                hh1 <- hh1 %>% arrange(DATE) %>% select(DATE, HH)
+                wti1 <- wti1 %>% filter(DATE >= min(hh1$DATE))
+                
                 crude = 'https://quotes.wsj.com/futures/CRUDE%20OIL%20-%20ELECTRONIC/contracts'
                 webpage <- read_html(crude)
                 #tbls <- html_nodes(webpage, 'table')
@@ -2984,6 +3021,16 @@ shiny::shinyApp(
                 
                 names(wti) <- c('DATE', 'WTI')
                 names(hh) <- c('DATE', 'HH')
+                
+                date1 <- min(wti1$DATE)
+                date2 <- max(hh$DATE)
+                date3 <- data.frame(DATE = seq(0, 1000, 1))
+                date3$DATE <- date1 %m+% months(date3$DATE) 
+                date3 <- date3 %>% filter(DATE <= date2)
+                wti <- rbind(wti1, wti)
+                wti <- merge(date3, wti, by='DATE', all.x=TRUE)
+                
+                hh <- rbind(hh1, hh)
                 
                 price <- merge(wti, hh, by='DATE', all.x=TRUE, all.y=TRUE)
                 
@@ -3132,7 +3179,8 @@ shiny::shinyApp(
                 Component = c('nri', 'spudToProd', 'drillCost', 'completeCost', 'pna', 'discOil', 
                               'discGas', 'discNGL', 'btu', 'shrink', 'nglYield', 'stxOil',
                               'stxGas', 'oilSTX', 'gasSTX', 'atx', 'yr1Fixed',
-                              'yr2Fixed', 'finalFixed', 'varOilExp', 'varGasExp', 'varWaterExp', 'wrkExp',
+                              'yr2Fixed', 'finalFixed', 'varOilExp', 'varGasExp', 'varWaterExp', 
+                              'varBOEExp', 'wrkExp',
                               'penalty', 'reversionIRR', 'nri2', 'wi', 'wi2',
                               'wiPDP', 'nriPDP', 'oilDiffPDP', 'hhDiffPDP', 'nglDiffPDP',
                               'shrinkPDP', 'nglYieldPDP', 'btuPDP', 'wellsPDP',
@@ -3143,7 +3191,8 @@ shiny::shinyApp(
                 Value = c(input$nri, input$spudToProd, input$drillCost, input$completeCost, input$pna, input$discOil,
                           input$discGas, input$discNGL, input$btu, input$shrink, input$nglYield, input$stxOil,
                           input$stxGas, input$oilSTX, input$gasSTX, input$atx, input$yr1Fixed,
-                          input$yr2Fixed, input$finalFixed, input$varOilExp, input$varGasExp, input$varWaterExp, input$wrkExp,
+                          input$yr2Fixed, input$finalFixed, input$varOilExp, input$varGasExp, input$varWaterExp, 
+                          input$varBOEExp, input$wrkExp,
                           input$penalty, input$reversionIRR, input$nri2, input$wi, input$wi2,
                           input$wiPDP, input$nriPDP, input$oilDiffPDP, input$hhDiffPDP, input$nglDiffPDP,
                           input$shrinkPDP, input$nglYieldPDP, input$btuPDP, input$wellsPDP,
@@ -3194,6 +3243,7 @@ shiny::shinyApp(
                 df$nglPrice <- df$oilPrice*expenseValues()$discNGL/100
             } else {
                 prices <- values$price
+                prices <- prices %>% filter(DATE >= today())
                 prices <- prices[(expenseValues()$spudToProd):nrow(prices),]
                 if(nrow(prices) > nrow(df)){
                     prices <- prices[1:nrow(df),]
@@ -3217,7 +3267,8 @@ shiny::shinyApp(
                 df$Oil*df$nri/100*expenseValues()$oilSTX + df$Gas*expenseValues()$nri/100*expenseValues()$gasSTX +
                 df$rev*df$nri/100*expenseValues()$atx/100
             
-            df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + df$Water*expenseValues()$varWaterExp +
+            df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + 
+                (df$Oil + df$NGL)*expenseValues()$varBOEExp +  df$Water*expenseValues()$varWaterExp +
                 expenseValues()$wrkExp*expenseValues()$wi/100 + expenseValues()$yr1Fixed*expenseValues()$wi/100
             
             df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*expenseValues()$wi/100 + expenseValues()$yr2Fixed*expenseValues()$wi/100
@@ -3246,8 +3297,10 @@ shiny::shinyApp(
                     df$Oil*df$nri/100*expenseValues()$oilSTX + df$Gas*df$nri/100*expenseValues()$gasSTX +
                     df$rev*df$nri/100*expenseValues()$atx/100
                 
-                df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + df$Water*expenseValues()$varWaterExp +
-                    expenseValues()$wrkExp*df$wi/100 + expenseValues()$yr1Fixed*df$wi/100
+                df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + 
+                    (df$Oil + df$NGL)*expenseValues()$varBOEExp +  df$Water*expenseValues()$varWaterExp +
+                    expenseValues()$wrkExp*expenseValues()$wi/100 + expenseValues()$yr1Fixed*expenseValues()$wi/100
+                
                 
                 df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*df$wi[13:24]/100 + expenseValues()$yr2Fixed*df$wi[13:24]/100
                 df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$yr2Fixed*df$wi[25:nrow(df)]/100
@@ -3298,8 +3351,9 @@ shiny::shinyApp(
                         df$Oil*df$nri/100*expenseValues()$oilSTX + df$Gas*df$nri/100*expenseValues()$gasSTX +
                         df$rev*df$nri/100*expenseValues()$atx/100
                     
-                    df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + df$Water*expenseValues()$varWaterExp +
-                        expenseValues()$wrkExp*df$wi/100 + expenseValues()$yr1Fixed*df$wi/100
+                    df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + 
+                        (df$Oil + df$NGL)*expenseValues()$varBOEExp +  df$Water*expenseValues()$varWaterExp +
+                        expenseValues()$wrkExp*expenseValues()$wi/100 + expenseValues()$yr1Fixed*expenseValues()$wi/100
                     
                     df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*df$wi[13:24]/100 + expenseValues()$yr2Fixed*df$wi[13:24]/100
                     df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$yr2Fixed*df$wi[25:nrow(df)]/100
@@ -3579,9 +3633,9 @@ shiny::shinyApp(
             prices <- values$price
             names(prices) <- c('Date', 'oilPrice', 'gasPrice')
             prices <- as.data.frame(prices)
-            if(nrow(prices) > nrow(df)){
-                prices <- prices[1:nrow(df),]
-            }
+            # if(nrow(prices) > nrow(df)){
+            #     prices <- prices[1:nrow(df),]
+            # }
             df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
             df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
             
@@ -3674,13 +3728,13 @@ shiny::shinyApp(
               DT::datatable(df, rownames = FALSE,
                             extensions = c('Buttons', 'Scroller'), 
                             options = list(
-                                dom = 'Bfrtip',
-                                scrollX = TRUE,
-                                scrollY = FALSE,
-                                deferRender = TRUE,
-                                paging = FALSE,
-                                searching = FALSE,
-                                buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                              dom = 'Bfrtip',
+                              scrollX = TRUE,
+                              scrollY = FALSE,
+                              deferRender = TRUE,
+                              paging = FALSE,
+                              searching = FALSE,
+                              buttons = c(I('colvis'),'copy', 'csv', 'excel', 'pdf', 'print')
                             ))  
           }
         })
@@ -3966,7 +4020,7 @@ shiny::shinyApp(
                 updateButton(session, 'addFcst', label = 'Calculating...', style = 'danger')
                 #print(head(values$price))
                 dfx <- values$devPlan
-                print(head(dfx))
+                #print(head(dfx))
                 dfx <- dfx[!duplicated(dfx),]
                 econSummary <- lapply(split(dfx, dfx[,'id']), function (well) tryCatch({
                     startDate1 <- data.frame(Month = seq(0, 30*12-1, 1))
@@ -3991,7 +4045,7 @@ shiny::shinyApp(
                         
                         startDate1 <- startDate1 %>% filter(wells != 0) %>% filter(!is.na(wells))
                         missingWells <- well$wellCount - sum(startDate1$wells)
-                        print(missingWells)
+                        #print(missingWells)
                         #startDate1$wells[nrow(startDate1)] <- startDate1$wells[nrow(startDate1)] + missingWells
                         
                     }
@@ -4108,6 +4162,7 @@ shiny::shinyApp(
                             df$rev*df$nri/100*df1$atx/100
                         
                         df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
+                            (df$Oil + df$NGL)*df1$varBOEExp +
                             df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                         
                         df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df1$wi/100 + df1$yr2Fixed*df1$wi/100
@@ -4137,7 +4192,8 @@ shiny::shinyApp(
                                 df$rev*df$nri/100*df1$atx/100
                             
                             df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
-                                df1$wrkExp*df$wi/100 + df1$yr1Fixed*df$wi/100
+                                (df$Oil + df$NGL)*df1$varBOEExp +
+                                df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                             
                             df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
                             df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
@@ -4189,7 +4245,8 @@ shiny::shinyApp(
                                     df$rev*df$nri/100*df1$atx/100
                                 
                                 df$expense <- df$Oil*df1$varOilExp + df$Gas*df1$varGasExp + df$Water*df1$varWaterExp +
-                                    df1$wrkExp*df$wi/100 + df1$yr1Fixed*df$wi/100
+                                    (df$Oil + df$NGL)*df1$varBOEExp +
+                                    df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                                 
                                 df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
                                 df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
@@ -4384,7 +4441,7 @@ shiny::shinyApp(
                                   deferRender = TRUE,
                                   paging = FALSE,
                                   searching = FALSE,
-                                  buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                                  buttons = c(I('colvis'),'copy', 'csv', 'excel', 'pdf', 'print')
                               ))  
 
             }
