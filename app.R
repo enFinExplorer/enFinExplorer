@@ -29,6 +29,7 @@ library(plotly)
 library(quantmod)
 library(aRpsDCA)
 library(scales)
+library(purrr)
 
 
 api_key <- "YD0LELAB40MThlu12RlH3WVZl"
@@ -810,6 +811,10 @@ IRRcalc <- function(cf, months){
     }
     return(IRR1)
 }
+
+embed_tweet <- function(tweet) {
+    tags$blockquote(class = "twitter-tweet", tags$a(href = tweet$status_url))
+}
 # cards
 flowCard <- tablerCard(
     title = "Options Visual",
@@ -859,6 +864,11 @@ shiny::shinyApp(
                     tabName = "home",
                     icon = "home",
                     "Company Analysis"
+                ),
+                tablerNavMenuItem(
+                    tabName = 'twitter',
+                    icon = 'twitter',
+                    'Twitter'
                 ),
                 tablerNavMenuItem(
                     tabName = "Options",
@@ -1164,6 +1174,14 @@ shiny::shinyApp(
                                   
                               
                               ),
+                tablerTabItem(
+                    tabName = 'twitter',
+                    fluidRow(
+                        column(width = 12,
+                         uiOutput('embedded_user_tweets')
+                        )
+                    )
+                ),
                 
                 tablerTabItem(
                     tabName = "Options",
@@ -1418,6 +1436,13 @@ shiny::shinyApp(
                                    width = 12,
                                    plotlyOutput('pdpPlot'),
                                    textOutput('pdpPV')
+                               ),
+                               tablerCard(
+                                   title = 'PDP Cash Flow Summary',
+                                   closable = FALSE,
+                                   zoomable = FALSE,
+                                   width = 12,
+                                   DT::dataTableOutput('pdpTable')
                                )
                         ),
                         column(3,
@@ -1681,7 +1706,7 @@ shiny::shinyApp(
                 NULL
             } else {
                 rt <- rt %>% filter(!duplicated(text))
-                
+                values$tweets <- rt
                 rt <- rt[,c('profile_image_url', 'screen_name', 'text', 'created_at')]
                 
                 #rt$profile_image_url <- img(src=rt$profile_image_url)
@@ -1699,6 +1724,20 @@ shiny::shinyApp(
             }
             
         })
+        # user_tweets <- reactive({
+        #     values$tweets %>%
+        #         #filter(screen_name == input$user_name) %>%
+        #         select(status_url, created_at, favorite_count, retweet_count)
+        # })
+        # 
+        output$embedded_user_tweets <- renderUI({
+            tweets <- as.data.frame(values$tweets)[1,]
+            tweets <- tweets %>% select(status_url, created_at, favorite_count, retweet_count)
+            #print(head(tweets))
+            tweetsTag <- tagList(map(transpose(tweets), embed_tweet), 
+                    tags$script('twttr.widgets.load(document.getElementById("tweets"));'))
+            htmltools::doRenderTags(tweetsTag)
+        }) 
         
         output$hcplot <- renderEcharts4r({
             ticker <- input$operatorSelect
@@ -3597,8 +3636,53 @@ shiny::shinyApp(
             
             df$Months <- seq(0, nrow(df)-1, 1)
             df$pv <- df$fcf/(1+expenseValues()$pdpDisc/100)^(df$Months/12)
-            
+            values$pdpTable <- df
             paste0('PDP NPV, M$: ', dollar(as.integer(sum(df$pv)/1000)))
+        })
+        
+        output$pdpTable <- DT::renderDataTable({
+          if(is.null(values$pdpTable)){
+              NULL
+          }  else {
+              #print(head(values$pdpTable))
+              df <- values$pdpTable
+              df <- subset(df, select = -c(Months, pv))
+              df$Date <- as.Date(df$Date)
+              df$expense <- dollar(df$expense)
+              df$capex <- dollar(df$capex)
+              df$pna <- dollar(df$pna)
+              df$oilPrice <- dollar(df$oilPrice)
+              df$gasPrice <- dollar(df$gasPrice)
+              df$nglPrice <- dollar(df$nglPrice)
+              df$oilRev <- dollar(df$oilRev)
+              df$gasRev <- dollar(df$gasRev)
+              df$nglRev <- dollar(df$nglRev)
+              df$revenue <- dollar(df$revenue)
+              df$tax <- dollar(df$tax)
+              df$nocf <- dollar(df$nocf)
+              df$fcf <- dollar(df$fcf)
+              names(df) <- c('DATE', 'WI Oil, bbls',
+                             'WI Gas, mcf', 'WI Water, bbls',
+                             'WI Sales Gas, mcf', 'WI NGL, bbls',
+                             'NRI Oil, bbls', 'NRI Gas, mcf',
+                             'NRI NGL, bbls', 'Operating Expenses, $',
+                             'Capital Expenditures, $', 'P&A, $',
+                             'Oil Price, $/bbl', 'Gas Price, $/mcf',
+                             'NGL Price, $/bbl', 'Oil Revenue, $',
+                             'Gas Revenue, $', 'NGL Revenue, $', 'Revenue, $',
+                             'Production Taxes', 'NOCF', 'FCF')
+              DT::datatable(df, rownames = FALSE,
+                            extensions = c('Buttons', 'Scroller'), 
+                            options = list(
+                                dom = 'Bfrtip',
+                                scrollX = TRUE,
+                                scrollY = FALSE,
+                                deferRender = TRUE,
+                                paging = FALSE,
+                                searching = FALSE,
+                                buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                            ))  
+          }
         })
         
         output$tcInfo <- renderText({
