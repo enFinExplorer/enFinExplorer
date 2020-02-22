@@ -13,7 +13,8 @@ library(shinyEffects)
 library(echarts4r)
 library(shinyWidgets)
 library(shinyjs)
-#library(bs4Dash)
+library(shinycssloaders)
+library(bs4Dash)
 library(shinyBS)
 library(tableHTML)
 library(xml2)
@@ -22,7 +23,7 @@ library(stringr)
 library(tidyverse)
 library(dplyr)
 library(tidyRSS)
-library(rtweet)
+#library(rtweet)
 library(lubridate)
 library(anytime)
 library(plotly)
@@ -30,32 +31,37 @@ library(quantmod)
 library(aRpsDCA)
 library(scales)
 library(purrr)
+library(httr)
+library(jsonlite)
+library(sp)
+library(maptools)
+library(maps)
+library(tools)
+library(geosphere)
+library(tigris)
+library(openintro)
+library(RColorBrewer)
+library(akima)
+library(rgdal)
+library(kernlab)
+library(caret)
+library(leaflet)
+library(leaflet.extras)
+library(shinyalert)
+library(DT)
+#library(excelR)
+
+source("body.R")
 
 
-css <- HTML(
-    "#pdpTable > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody {
-  transform:rotateX(180deg);
-  }
-  #pdpTable > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody table{
-  transform:rotateX(180deg);
-   }"
-)
-css1 <- HTML(
-    "#pudFcst > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody {
-  transform:rotateX(180deg);
-  }
-  #pudFcst > .dataTables_wrapper.no-footer > .dataTables_scroll > .dataTables_scrollBody table{
-  transform:rotateX(180deg);
-   }"
-)
 options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
-opList1 <- c('APA',  'AR', 'AREX', 'BCEI', 'BRY', 'CDEV', 'CHAP', 'CHK', 'CLR',
-             'CNX', 'COG', 'COP', 'CPE', 'CRC', 'CRK', 'CRZO', 'CXO', 'DNR', 'DVN', 'ECA','EOG',
-             'EQT', 'ESTE', 'FANG', 'GPOR', 'GDP', 'HES', 'HPR', 'JAG', 'LLEX', 'LPI', 'MGY', 'MR',
-             'MRO', 'MTDR', 'MUR', 'NBL',  'OAS', 'OXY', 'PDCE', 'PE', 'PVAC', 'PXD', 'QEP',
-             'REI', 'RRC', 'SBOW', 'SD', 'SM', 'SWN', 'UPLC', 'WLL', 'WPX', 'WTI', 'XEC', 'XOG', 'XOM')  
+# opList1 <- c('APA',  'AR', 'AREX', 'BCEI', 'BRY', 'CDEV', 'CHAP', 'CHK', 'CLR',
+#              'CNX', 'COG', 'COP', 'CPE', 'CRC', 'CRK', 'CRZO', 'CXO', 'DNR', 'DVN', 'ECA','EOG',
+#              'EQT', 'ESTE', 'FANG', 'GPOR', 'GDP', 'HES', 'HPR', 'JAG', 'LLEX', 'LPI', 'MGY', 'MR',
+#              'MRO', 'MTDR', 'MUR', 'NBL',  'OAS', 'OXY', 'PDCE', 'PE', 'PVAC', 'PXD', 'QEP',
+#              'REI', 'RRC', 'SPSIOP', 'SBOW', 'SD', 'SM', 'SWN', 'UPLC', 'WLL', 'WPX', 'WTI', 'XEC', 'XOG', 'XOM')  
 is2List <- c('AVERAGE SHARES OUTSTANDING', 'Average Shares Outstanding', 'Average shares outstanding', 'average shares outstanding',
              'COMMON SHARES OUTSTANDING', 'Common Shares Outstanding', 'Common shares outstanding', 'common shares outstanding',
              'AVERAGE NUMBER OF', 'Average Number of', 'Average number of', 'average number of', 
@@ -91,11 +97,28 @@ prodList <- c('Natural gas liquids production', 'Cash settled deriv', 'Sales vol
 
 reserveList <- c('Proved Developed', 'PROVED DEVELOPED', 'Proved developed', 'Standardized measure of discount', 'Discounted future net')
 
-opList1 <- c('APA',  'AR', 'AREX', 'BCEI', 'BRY', 'CDEV', 'CHAP', 'CHK', 'CLR',
-             'CNX', 'COG', 'COP', 'CPE', 'CRC', 'CRK', 'CRZO', 'CXO', 'DNR', 'DVN', 'ECA','EOG',
-             'EQT', 'ESTE', 'FANG', 'GPOR', 'GDP', 'HES', 'HPR', 'JAG', 'LLEX', 'LPI', 'MGY', 'MR',
-             'MRO', 'MTDR', 'MUR', 'NBL',  'OAS', 'OXY', 'PDCE', 'PE', 'PVAC', 'PXD', 'QEP',
-             'REI', 'RRC', 'SBOW', 'SD', 'SM', 'SWN', 'UPLC', 'WLL', 'WPX', 'WTI', 'XEC', 'XOG', 'XOM')  
+opList1 <- c('APA',  'AR', 'AREX', 'BCEI', 'BP', 'CDEV', 'CHAP', 'CHK', 'CLR',
+             'CNX', 'COG', 'COP', 'CPE',  'CRK',  'CXO',  'DVN', 'ECA','EOG',
+             'EQT', 'ESTE', 'FANG', 'GPOR', 'GDP', 'GUI', 'HES', 'HPR',  'LLEX', 'LPI', 'MGY', 'MR',
+             'MRO', 'MTDR', 'MUR', 'NBL',  'OAS', 'OXY', 'PDCE', 'PE', 'PVAC', 'PXD', 'QEP', 'RDS-A',
+              'RRC', 'SBOW', 'SM', 'SWN',  'WLL', 'WPX', 'XEC', 'XOG', 'XOM')  
+
+opLink <- data.frame(ticker = opList1, operator = c('Apache', 'Antero Resources',
+                                                   'Approach Resources',  'Bonanza Creek Energy', 'BP','Centennial Resource Development',
+                                                   'Chaparral Energy', 'Chesapeake Energy', 'Continental Resources',
+                                                   'CNX Resources', 'Cabot Oil & Gas', 'ConocoPhillips', 'Callon Petroleum',
+                                                   'Comstock Resources',  'Concho Resources',
+                                                   'Devon Energy', 'Encana Corporation', 'EOG Resources', 'EQT Corporation', 'Earthstone Energy',
+                                                   'Diamondback Energy', 'Gulfport Energy', 'Goodrich Petroleum', 'Guidon Energy Management Services',
+                                                   'Hess Corporation', 'HighPoint Resources', 
+                                                   'Lilis Energy', 'Laredo Petroleum',
+                                                   'Magnolia Oil & Gas Operating', 'Montage Resources', 'Marathon Oil',
+                                                   'Matador Resources', 'Murphy Oil', 'Noble Energy', 'Oasis Petroleum',
+                                                   'Occidental Petroleum', 'PDC Energy', 'Parsley Energy', 'Penn Virginia Corporation',
+                                                   'Pioneer Natural Resources', 'QEP Resources', 'Shell', 'Range Resources',
+                                                   'SilverBow Resources', 'SM Energy', 'Southwestern Energy', 'Whiting Petroleum Corporation',
+                                                   'WPX Energy', 'Cimarex Energy', 'Extraction Oil & Gas', 'ExxonMobil'))
+
 
 derivList <- c('SWAP', 'Swap', 'swap', 'COLLAR','Collar', 'collar', 'Natural gas MMbtu',
                'Weighted average index', 'Weightedaverage in', 
@@ -815,37 +838,23 @@ IRRcalc <- function(cf, months){
     }
     return(IRR1)
 }
+rsq <- function(x, y) summary(lm(y~x))$r.squared
+# wellData <- readRDS("./data/wellData2.rds") 
+# subBasinList <- unique(wellData$subBasin)
+# 
+# leaseSummary <- readRDS("./data/leases2.rds")
+# leaseSummary$operator[leaseSummary$operator == 'Bp'] <- 'BP'
+# leaseSummary$operator[leaseSummary$operator == 'Swn Production'] <- 'Southwestern Energy'
+# propUplift <- readRDS("./data/propUplift.rds")
+# perfRisk <- data.frame(perf = c(0, 2500, 5000, 7500, 10000, 12500, 15000), risk = c(0, 0.55, 1, 1.45, 1.85, 2.2, 2.5))
+# 
+# perfUplift <- lm(perfRisk$risk ~ perfRisk$perf + I(perfRisk$perf**2))
+# costData <- readRDS("./data/costData.rds")
+# countyData <- readRDS("./data/countyData.rds")
+# wellInfoX <- readRDS('./data/wellInfo.rds')
+# prodData <- readRDS("./data/prod.rds")
 
-embed_tweet <- function(tweet) {
-    tags$blockquote(class = "twitter-tweet", tags$a(href = tweet$status_url))
-}
 # cards
-flowCard <- tablerCard(
-    title = "Options Visual",
-    closable = FALSE,
-    zoomable = TRUE,
-    options = tagList(
-        tablerIcon(name = 'usd', lib=c('font-awesome'))
-    ),
-    width = 12,
-    echarts4rOutput("flowGl")
-)
-
-profileCard <- tablerProfileCard(
-    width = 12,
-    title = "energyfinexplorer@gmail.com",
-    subtitle = "Oil and Gas Equity Analysis",
-    background = "",
-    src = "bd.jpg",
-    tablerSocialLinks(
-        
-        tablerSocialLink(
-            name = "twitter",
-            href = "https://www.twitter.com/Brandon17832728",
-            icon = "twitter"
-        )
-    )
-)
 
 
 
@@ -860,6 +869,8 @@ shiny::shinyApp(
         enable_preloader = TRUE,
         loading_duration = 2,
         navbar = tablerDashNav(
+            
+                
             id = "mymenu",
             src = "rig.png",
             h3('Energy Financial Explorer'),
@@ -870,34 +881,42 @@ shiny::shinyApp(
                     "Home"
                 ),
                 tablerNavMenuItem(
+                  tabName = "Options",
+                  icon = "box",
+                  "Derivatives"
+                ),
+                tablerNavMenuItem(
                     tabName = "comp",
                     icon = "box",
                     "Company Analysis"
                 ),
-                # tablerNavMenuItem(
-                #     tabName = 'twitter',
-                #     icon = 'twitter',
-                #     'Twitter'
-                # ),
+
+                
                 tablerNavMenuItem(
-                    tabName = "Options",
-                    icon = "box",
-                    "Derivatives"
+                  tabName = "pdp",
+                  icon = 'box',
+                  "Proved Developed Forecast"
                 ),
                 tablerNavMenuItem(
                     tabName = "typeCurves",
                     icon = 'box',
                     "Type Curves"
                 ),
-                tablerNavMenuItem(
-                    tabName = "pdp",
-                    icon = 'box',
-                    "Proved Developed Forecast"
-                ),
+                
+                # tablerNavMenuItem(
+                #   tabName = "wmac",
+                #   icon = 'box',
+                #   "Woodmac TC Generator"
+                # ),
                 tablerNavMenuItem(
                     tabName = "devPlan",
                     icon = 'box',
                     "Development Plan"
+                ),
+                tablerNavMenuItem(
+                    tabName = "finCalc",
+                    icon = 'box',
+                    "RS-TUV Engineering"
                 ),
                 tablerNavMenuItem(
                     tabName = "About",
@@ -911,19 +930,14 @@ shiny::shinyApp(
                     p("Built with:"),
                     a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "30"), href='https://shiny.rstudio.com/',target='_blank'),
                     
-                    #br(),
-                    
-                    #br(),
-                    #a(img(src = 'argonDash.svg', height = '30'),href='https://rinterface.github.io/argonDash/', target='_blank'),
-                    #a(img(src = 'argonR.svg', height = '30'),href='https://rinterface.com/shiny/argonR/',target='_blank'),
                     a(img(src = 'tablerDash.svg', height = '30'),href='https://github.com/RinteRface/tablerDash',target='_blank'),
-                    #br(),
+                    
                     a(img(src = 'dplyr.png', height = '30'),href='https://dplyr.tidyverse.org/',target='_blank'),
                     a(img(src = 'rvest.png', height = '30'),href='https://github.com/tidyverse/rvest',target='_blank'),
                     a(img(src = 'tidyverse.png', height = '30'),href='https://www.tidyverse.org/',target='_blank'),
-                    #br(),
+                   
                     a(img(src = 'lubridate.png', height = '30'),href='https://lubridate.tidyverse.org/',target='_blank'),
-                    #a(img(src = 'naniar.png', height = '30'), href='https://github.com/njtierney/naniar',target='_blank'),
+                    
                     a(img(src = 'rtweet.png', height = '30'), href='https://rtweet.info/',target='_blank'),
                     a(img(src = 'tableHTML.png', height = '30'), href='https://github.com/LyzandeR/tableHTML',target='_blank'),
                     a(img(src = 'echarts.png', height = '30'), href='https://echarts4r.john-coene.com/index.html',target='_blank'),
@@ -934,20 +948,16 @@ shiny::shinyApp(
                     a(img(src = "love.png", height = "30"), href='https://deanattali.com/shinyjs/',target='_blank'),
                     br(),
                     
-                    #(a("    shinyauthr    ", href="https://github.com/PaulC91/shinyauthr",target='_blank')),
-                    #br(),
                     (a("    shinyBS    ", href="https://ebailey78.github.io/shinyBS/index.html",target='_blank')),
                     br(),
                     (a("    shinyWidgets    ", href="https://github.com/dreamRs/shinyWidgets",target='_blank')),
                     br(),
                     (a('    quantmod    ', href = 'https://github.com/joshuaulrich/quantmod',target='_blank')),
                     br(),
-                    #(a('    sodium    ', href = 'https://github.com/jeroen/sodium',target='_blank')),
-                    #br(),
+                  
                     (a('    DT    ', href = 'https://github.com/rstudio/DT',target='_blank')),
                     br(),
-                    #(a('    formattable    ', href = 'https://renkun-ken.github.io/formattable/',target='_blank')),
-                    #br(),
+                   
                     (a('    tidyRSS    ', href = 'https://github.com/RobertMyles/tidyRSS',target='_blank')),
                     br(),
                     (a('    aRpsDCA    ', href = 'https://github.com/derrickturk/aRpsDCA',target='_blank'))
@@ -960,697 +970,7 @@ shiny::shinyApp(
             )
         ),
         
-        body = tablerDashBody(
-            
-            
-            #setZoom(class = "card"),
-            chooseSliderSkin("Nice"),
-            useShinyjs(),
-            tablerTabItems(
-                tablerTabItem('home',
-                              fluidRow(
-                                  column(12,
-                                         
-                                         tablerCard(
-                                             title = 'Strip Pricing',
-                                             closable = FALSE,
-                                             zoomable = TRUE,
-                                             width = 12,
-                                             echarts4rOutput('stripPrice')
-                                         )
-                                  )
-                              )
-                ),
-                tablerTabItem('comp',
-                              selectizeInput('operatorSelect', 'Select Operator', choices = opList1),
-                              fluidRow(
-                                  column(6,
-                                         tablerCard(
-                                             title = 'Stock Price (Candlestick)',
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-                                             dateInput(inputId = 'start_date', label = 'Start Date', value = '2019-01-01'),
-                                             echarts4rOutput('hcplot')
-                                             
-                                         )   
-                                         
-                                         
-                                  ),
-                                      column(6,
-                                             tablerCard(
-                                                 title = 'S&P 500 Benchmarking',
-                                                 closable = FALSE,
-                                                 zoomable = FALSE,
-                                                 collapsed = FALSE,
-                                                 width = 12,
-                                                 dateInput(inputId = 'start_date1', label = 'Start Date', value = '2019-01-01'),
-                                                 multiInput('operatorSelect1', 'Select Operators', choices = opList1, selected = 'APA'),
-                                                 
-                                                 echarts4rOutput('hcplot1')
-                                                 
-                                             )
-                                      )
-                                  ),
-                              
-                                  
-                             
-                             #  
-                             # fluidRow(
-                             #     column(12,
-                             #         tablerCard(
-                             #             title = icon('twitter'),
-                             #             closable = FALSE,
-                             #             zoomable = FALSE,
-                             #             collapsed = FALSE,
-                             #             width = 12,
-                             #             DT::dataTableOutput('tweets')
-                             #         )
-                             #     )
-                             # 
-                             #  ),
-                              fluidRow(
-                                  column(12,
-                                         tablerCard(
-                                             title =icon('newspaper'),
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-
-                                             DT::dataTableOutput('news')
-                                             
-                                         )
-                                         
-                                  )
-                              ),
-                              
-                              fluidRow(
-                                  column(6,
-                                         tablerCard(
-                                             title ='SEC Quarterly/Annual Filings' ,
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-                                             
-                                                
-                                                
-                                                bsButton('loadFilings', 'LOAD', style='primary', size='extra-small'),
-                                                DT::dataTableOutput('filingList')
-                                                 
-                                             )
-                                         
-                                    ),
-                                  column(6,
-                                         tablerCard(
-                                             title ='Load Tables' ,
-                                             closable = FALSE,
-                                             zoomable = FALSE,
-                                             collapsed = FALSE,
-                                             width = 12,
-                                             selectizeInput('Filing', 'Available Periods', choices = '', selected = NULL),
-                                             
-                                             
-                                             
-                                             bsButton('loadTables', 'LOAD', style='primary', size='extra-small')
-                                             
-                                         )
-                                         
-                                  )
-                                  ),
-                              
-                                  fluidRow(
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Balance Sheet',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('bs')
-                                                 )),
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Income Statement',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     
-                                                     width = 12,
-                                                     tableHTML_output('is')
-                                                 ))
-                                  ),
-                                  fluidRow(
-                                     
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Cash Flow Statement',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('cf')
-                                                 )),
-                                          column(6,
-                                      
-                                                 tablerCard(
-                                                     title = 'Production Tables',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('prod')
-                                                 ))
-                                  ),
-                                  fluidRow(
-                                     
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Derivatives',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('deriv')
-                                                 )),
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Debt Tables',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     DT::dataTableOutput('debtLink'),
-                                                     tableHTML_output('debt')
-                                                 ))
-                                      ),
-                                  fluidRow(
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Firm Transportation',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('firm')
-                                                 )),
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'Reserves Information',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     DT::dataTableOutput('reportLink'),
-                                                     tableHTML_output('reserves')
-                                                 ))
-                                  ),
-                                  fluidRow(
-                                      
-                                          column(6,
-                                                 tablerCard(
-                                                     title = 'EBITDA tables',
-                                                     closable = FALSE,
-                                                     zoomable = FALSE,
-                                                     collapsed = FALSE,
-                                                     width = 12,
-                                                     tableHTML_output('ebitda')
-                                                 ))
-                                  )
-                                
-                                  
-                              
-                              ),
-                # tablerTabItem(
-                #     tabName = 'twitter',
-                #     fluidRow(
-                #         column(width = 12,
-                #          uiOutput('embedded_user_tweets')
-                #         )
-                #     )
-                # ),
-                
-                tablerTabItem(
-                    tabName = "Options",
-                    fluidRow(
-                        column(
-                            width = 6,
-                            
-                            tablerCard(
-                                title = 'Option Type',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('options',
-                                             '',
-                                             choices = c('Swap', 'Two-way Collar', 'Three-way Collar'),
-                                             selected = 'Swap',
-                                             status = 'primary')
-                            ),
-                            tablerCard(
-                                title = 'Product Type',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('product',
-                                             '',
-                                             choices = c('Gas', 'Oil'),
-                                             selected = 'Gas',
-                                             status = 'primary')
-                            )
-                        ),
-                        
-                        column(
-                            width = 6,
-                            tablerCard(
-                                title = 'Derivative Parameters',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('volumeHedged', 'Total Volume Hedged, MCF/MMBTU', 1500000, min = 0),
-                                numericInput('oilPrice', 'Index Oil Price, $/BBL', value = 54, min = 0, max = 150),
-                                numericInput('gasPrice', 'Index Gas Price, $/M', value = 2.5, min = 0, max = 10),
-                                numericInput('swap1', 'Swap Price', value = 2.5, min = 0, max = 10),
-                                numericInput('collar21', 'Short Call Price', value = 2.5, min = 0, max = 10),
-                                numericInput('collar22', 'Long Put Price', value = 2.5, min = 0, max = 10),
-                                numericInput('collar33', 'Short Put Price', value = 2.5, min = 0, max = 10),
-                                textOutput('mtm')#,
-                                #numericInput('collar34', 'Premium Price', value = 1.8, min = 0, max = 10)
-                                
-                            )
-                        )
-                    ),
-                    fluidRow(
-                        column(
-                            width = 12,
-                            flowCard
-                        )
-                    )
-                ),
-                tablerTabItem(
-                    tabName = "typeCurves",
-                    fluidRow(
-                        column(
-                            width = 3,
-                            
-                            
-                            tablerCard(
-                                title = 'Selection Parameters',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('tcProduct',
-                                             '',
-                                             choices = c('Gas', 'Oil', 'Water'),
-                                             selected = 'Oil',
-                                             status = 'primary'),
-                                awesomeRadio('abandonmentMethod',
-                                             'Abandonment Calculation',
-                                             choices = c('Oil Rate', 'Gas Rate', 'Time'),
-                                             selected = 'Time',
-                                             status = 'primary')
-                            ),
-                            tablerCard(
-                                title = 'Decline Parameters',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('qiOil', 'Oil IP Rate, bbl/d', 500, min = 0),
-                                numericInput('bOil', 'Oil B Factor', value = 1, min = 0, max = 2),
-                                numericInput('DiOil', 'Oil Initial Decline (Tangent Effective)', value = 0.9, min = 0.2, max = 0.99999999999),
-                                numericInput('DfOil', 'Oil Terminal Decline (Tangent Effective)', value = 0.1, min = 0, max = 0.1999999999),
-                                numericInput('curtailOil', 'Choke Period (Months)', value = 0, min = 0),
-                                numericInput('qiGas', 'Gas IP Rate, mcf/d', 1000, min = 0),
-                                numericInput('bGas', 'Gas B Factor', value = 1, min = 0, max = 2),
-                                numericInput('DiGas', 'Gas Initial Decline (Tangent Effective)', value = 0.9, min = 0.2, max = 0.99999999999),
-                                numericInput('DfGas', 'Gas Terminal Decline (Tangent Effective)', value = 0.1, min = 0, max = 0.1999999999),
-                                numericInput('curtailGas', 'Choke Period (Months)', value = 0, min = 0),
-                                numericInput('qiWater', 'Water IP Rate, mcf/d', 1500, min = 0),
-                                numericInput('bWater', 'Water B Factor', value = 1, min = 0, max = 2),
-                                numericInput('DiWater', 'Water Initial Decline (Tangent Effective)', value = 0.9, min = 0.2, max = 0.99999999999),
-                                numericInput('DfWater', 'Water Terminal Decline (Tangent Effective)', value = 0.1, min = 0, max = 0.1999999999),
-                                numericInput('curtailWater', 'Choke Period (Months)', value = 0, min = 0),
-                                numericInput('qfOil', 'Abandonment Rate, bbl/d', value = 1, min = 0.1),
-                                numericInput('qfGas', 'Abandonment Rate, mcf/d', value = 1, min = 0.1),
-                                numericInput('wellLife', 'Total Well Life (Years)', value = 30, min = 1, max = 50),
-                            )
-                        ),
-                        column(
-                            width = 6,
-                            
-                            tablerCard(
-                                title = 'Type Curve Plot',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('logTC', '', choices = c('Log', 'Cartesian'), selected = 'Cartesian'),
-                                echarts4rOutput('tcPlot'),
-                                textOutput('eurData'),
-                                textOutput('economics'),
-                                textOutput('economicIRR')
-                            ),
-                            bsButton('saveTC', 'Save TC to Development Plan', style = 'primary')
-                        ),
-                        
-                        column(
-                            width = 3,
-                            tablerCard(
-                                title = 'Pricing',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('priceType',
-                                             'Price Methodology',
-                                             choices = c('Current Strip', 'Flat'),
-                                             selected = 'Current Strip',
-                                             status = 'primary'),
-                                numericInput('wti', 'Oil Price in WTI ($/BBL)', 60, min = 0),
-                                numericInput('hh', 'Gas Price in Henry Hub ($/MCF)', 3, min = 0)
-                                
-                                
-                            ),
-                            tablerCard(
-                                title = 'Economic Factors',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                awesomeRadio('econAban',
-                                             'Abandon at Economic Limit?',
-                                             choices = c('Yes', 'No'),
-                                             selected = 'Yes',
-                                             status = 'primary'),
-                                numericInput('wi', 'WI, %', 100, min = 0),
-                                numericInput('nri', 'NRI, % (to the 100%)', 75, min = 0),
-                                awesomeRadio('reversion',
-                                             'Reversion Type',
-                                             choices = c('None', 'IRR', 'Penalty'),
-                                             selected = 'None',
-                                             status = 'primary'),
-                                numericInput('reversionIRR', 'Reversion IRR %', value = 10, min = 0, max = 50),
-                                numericInput('penalty', 'Non-consent Penalty %', value = 100, min = 0, max = 300),
-                                numericInput('wi2', 'Post Reversion WI %', value = 90, min = 0, max = 100),
-                                numericInput('nri2', 'Post Reversion NRI % (to the 100%)', value = 75, min = 0, max = 100)
-                                ),
-                            tablerCard(
-                                title = 'Capex',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('spudToProd', 'Spud to First Production (months)', 3, min = 1),
-                                numericInput('drillCost', 'Drill Cost, $', 3000000, min = 1),
-                                numericInput('completeCost', 'Complete & Equip Cost, $', 4500000, min = 1),
-                                numericInput('pna', 'Plug & Abandon, $', 40000, min = 1)
-                                ),
-                            tablerCard(
-                                title = 'Revenue Adjustments',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('discOil', 'Oil Basis Diff, $/BBL', 2, min = 0),
-                                numericInput('discGas', 'Gas Basis Diff, $/MCF', 2, min = 0),
-                                numericInput('discNGL', 'NGL %WTI', 20, min = 0),
-                                numericInput('btu', 'BTU Uplift', 1, min = 0, max = 3),
-                                numericInput('shrink', 'Gas Shrink (fraction retained)', 0.75, min = 0, max = 1),
-                                numericInput('nglYield', 'NGL Yield, bbl/MMCF', 90, min = 0, max = 200)
-                                ),
-                            tablerCard(
-                                title = 'Taxes',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('stxOil', 'Oil Severance % Revenue', 4.6, min = 0, max = 20),
-                                numericInput('stxGas', 'Gas/NGL Severance % Revenue', 7.5, min = 0, max = 20),
-                                numericInput('oilSTX', 'Oil Severance/BBL', 1, min = 0, max = 20),
-                                numericInput('gasSTX', 'Gas Severance/MCF', .1, min = 0, max = 20),
-                                numericInput('atx', 'Ad Val % Revenue', 2.5, min = 0, max = 20)
-                                ),
-                            tablerCard(
-                                title = 'Operating Expenses',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                                numericInput('yr1Fixed', 'Fixed Opex/Month, Year 1', 10000, min = 0),
-                                numericInput('yr2Fixed', 'Fixed Opex/Month, Year 2', 10000, min = 0),
-                                numericInput('finalFixed', 'Fixed Opex/Month, Remaining', 10000, min = 0),
-                                numericInput('varOilExp', 'Variable Expense/BBL Oil', 2, min = 0),
-                                numericInput('varGasExp', 'Variable Expense/MCF Gas', 0.25, min = 0),
-                                numericInput('varWaterExp', 'Variable Expense/BBL Water', 2, min = 0),
-                                numericInput('varBOEExp', 'Variable Expense/BBL Oil + NGL', 2, min = 0),
-                                numericInput('wrkExp', 'Workover Expense/Month', 750, min = 0)
-                                
-                                
-                            )
-                        )
-                    )
-                ),
-                tablerTabItem(
-                    tabName = "pdp",
-                    tags$head(tags$style(css)),
-                    fluidRow(
-                        column(3,
-                               tablerCard(
-                                   title = 'PDP Profile Type',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   awesomeRadio('pdpType',
-                                                'PDP Input Type',
-                                                choices = c('Full Economics', 'Production Only'),
-                                                selected = 'Production Only',
-                                                status = 'primary')
-                                   
-                                     
-                               ),
-                               tablerCard(
-                                   title = 'Basic Assumptions',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   dateInput('effDate', 'Effective Date'),
-                                   numericInput('wiPDP', 'WI %', value =100, min = 1, max = 100),
-                                   numericInput('nriPDP', 'NRI % (to the 100%)', value =75, min = 1, max = 100),
-                                   numericInput('pnaPDP', 'P&A Per Well, $', value = 20000, min = 1),
-                                   numericInput('pdpDisc', 'PDP Discount Rate, %', value = 10, min =0, max = 30),
-                                   awesomeRadio('econLimitPDP',
-                                                'Economic Limit Cutoff?',
-                                                choices = c('Yes', 'No'),
-                                                selected = 'Yes',
-                                                status = 'primary')
-                               )
-                               ),
-                        column(6,
-                               tablerCard(
-                                title = 'Data Load',
-                                closable = FALSE,
-                                zoomable = TRUE,
-                                width = 12,
-                               
-                               textOutput('pdpInstruct'),
-                               #tableHTML_output('rowInstruct'),
-                               fileInput("file1", "Choose CSV File",
-                                         accept = c(
-                                             "text/csv",
-                                             "text/comma-separated-values,text/plain",
-                                             ".csv")
-                               ),
-                               plotlyOutput('contents')
-                               ),
-                               tablerCard(
-                                   title = 'PDP Plot',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   plotlyOutput('pdpPlot'),
-                                   textOutput('pdpPV')
-                               )
-                        ),
-                        column(3,
-                               
-                               tablerCard(
-                                   title = 'Revenue Assumptions',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   awesomeRadio('pdpPrice',
-                                                'PDP Price Case',
-                                                choices = c('Current Strip', 'Flat'),
-                                                selected = 'Current Strip',
-                                                status = 'primary'),
-                                   
-                                   numericInput('wtiPDP', 'WTI, $/BBL', value =60, min = 1),
-                                   numericInput('hhPDP', 'HH, $/BBL', value = 2, min = 0.1),
-                                   numericInput('oilDiffPDP', 'Oil Basis Diff, $/BBL', value = 2, min = 0),
-                                   numericInput('hhDiffPDP', 'Gas Basis Diff, $/MCF', value = 0.5, min = 0),
-                                   numericInput('nglDiffPDP', 'NGL Price % WTI', value = 20, min = 0, max = 100),
-                                   numericInput('shrinkPDP', 'Shrink (fraction retained)', value = 0.75, min = 0, max = 1),
-                                   numericInput('nglYieldPDP', 'NGL Yield, BBL/MMCF', value = 75, min = 0, max = 200),
-                                   numericInput('btuPDP', 'Gas BTU', value = 1, min = 0, max = 3)
-                               ),
-                               tablerCard(
-                                   title = 'Expense Assumptions',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   numericInput('wellsPDP', 'Wells', value = 100, min = 1),
-                                   numericInput('fixedPDP', 'Fixed Opex/Month/Well', value =1000, min = 1),
-                                   numericInput('varGasPDP', 'Variable Gas Opex, $/MCF', value = 0.25, min = 0),
-                                   numericInput('varOilPDP', 'Variable Oil Opex, $/BBL', value = 2, min = 0),
-                                   numericInput('varWaterPDP', 'Variable Water Opex, $/BBL', value = 0.5, min = 0),
-                                   numericInput('varBOEPDP', 'Variable Liquids (Oil+NGL), $/BBL', value = 1, min = 0)
-                               ),
-                               tablerCard(
-                                   title = 'Tax Assumptions',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   numericInput('stxOilPDP', 'Oil Severance % Revenue', 4.6, min = 0, max = 20),
-                                   numericInput('stxGasPDP', 'Gas/NGL Severance % Revenue', 7.5, min = 0, max = 20),
-                                   numericInput('oilSTXPDP', 'Oil Severance/BBL', 1, min = 0, max = 20),
-                                   numericInput('gasSTXPDP', 'Gas Severance/MCF', .1, min = 0, max = 20),
-                                   numericInput('atxPDP', 'Ad Val % Revenue', 2.5, min = 0, max = 20)
-                               )
-                               )
-                    ),
-                    fluidRow(
-                        column(12,
-                                    
-                                    tablerCard(
-                                        title = 'PDP Cash Flow Summary',
-                                        closable = FALSE,
-                                        zoomable = FALSE,
-                                        width = 12,
-                                        
-                                        DT::dataTableOutput('pdpTable')
-                                        
-                                    )))
-                    
-                    
-                ),
-                
-                tablerTabItem(
-                    tabName = 'devPlan',
-                    tags$head(tags$style(css1)),
-                    fluidRow(
-                        column(3,
-                               tablerCard(
-                                   title = 'Type Curve Information',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   awesomeRadio('tcLoads', 'Available Type Curves', choices = '', inline = TRUE, checkbox = TRUE, status = "primary"),
-                                   textOutput('tcInfo'),
-                                   bsButton('removeTC', 'Remove Selected TC', style = 'danger')
-                               )
-                               ),
-                        column(3,
-                               tablerCard(
-                                   title = 'Price Assumption',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   awesomeRadio('priceSelection', 'Price Scenario', 
-                                                choices = c('Current Strip', 'Flat'), 
-                                                selected = 'Current Strip', inline = TRUE, checkbox =TRUE, 
-                                                status = 'primary'),
-                                   numericInput('wtiDev', 'WTI, $/BBL', value = 60, min = 1),
-                                   numericInput('hhDev', 'HH, $/MCF', value = 2, min = 0.1)
-                                   )
-                        ),
-                        column(6,
-                               tablerCard(
-                                   title = 'Development Plan',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   fluidRow(
-                                       column(6,
-                                        dateInput('startDate', label = 'Forecast Start', value = today())),
-                                       column(6,
-                                              numericInput('wellCount', 'Gross Wells', value = 10, min = 0))
-                                   ),
-                                   fluidRow(
-                                       column(6,
-                                        numericInput('yr1Dev', 'Year 1 Wells', value = 1, min = 0),
-                                        textOutput('rem1')),
-                                       
-                                       column(6,
-                                        numericInput('yr2Dev', 'Year 2 Wells', value = 1, min = 0),
-                                        textOutput('rem2'))
-                                       ),
-                                   fluidRow(
-                                       column(6,
-                                        numericInput('yr3Dev', 'Year 3 Wells', value = 1, min = 0),
-                                        textOutput('rem3')),
-                                       column(6,
-                                        numericInput('yr4Dev', 'Year 4 Wells', value = 1, min = 0),
-                                        textOutput('rem4'))
-                                       ),
-                                   fluidRow(
-                                       column(6,
-                                        numericInput('yr5Dev', 'Year 5 Wells', value = 1, min = 0),
-                                        textOutput('rem5')),
-                                       column(6,
-                                        numericInput('yr6Dev', 'Year 6 Wells', value = 1, min = 0),
-                                        textOutput('rem6'))
-                                       ),
-                                   fluidRow(
-                                       column(6,
-                                        numericInput('yr7Dev', 'Year 7 Wells', value = 1, min = 0),
-                                        textOutput('rem7')),
-                                       column(6,
-                                        numericInput('yr8Dev', 'Year 8 Wells', value = 1, min = 0),
-                                        textOutput('rem8'))
-                                       ),
-                                   fluidRow(
-                                       column(6,
-                                        numericInput('yr9Dev', 'Year 9 Wells', value = 1, min = 0),
-                                        textOutput('rem9')),
-                                       column(6,
-                                        numericInput('yr10Dev', 'Year 10+ (Wells/Year)', value = 1, min = 0),
-                                        textOutput('rem10'))),
-                                   bsButton('addFcst', 'Add to Forecast', style = 'primary', size='small')
-                               )
-                        )
-                    ),
-                    fluidRow(
-                        column(6,
-                               tablerCard(
-                                   title = 'Cash Flow Summary',
-                                   closable = FALSE,
-                                   zoomable = FALSE,
-                                   width = 12,
-                                   DT::dataTableOutput('pudFcst'))
-                        ),
-                        column(6,
-                               tablerCard(
-                                   title = 'Cash Flow Graph',
-                                   closable = FALSE,
-                                   zoomable = TRUE,
-                                   width = 12,
-                                   selectizeInput('graphSelect', 'Select Metric', choices = c('Oil', 'Gas', 'Sales_Gas',
-                                                                                              'NGL', 'Water', 'netOil', 'netGas', 'netBOE', 'netMCFE',
-                                                                                              'netNGL', 'revenue', 'tax', 'expense', 'nocf',
-                                                                                              'capex', 'fcf'), selected = 'netBOE'),
-                                               
-                                   plotlyOutput('cfGraph')
-                               ))
-                    )
-                ),
-                tablerTabItem(
-                    tabName = "About",
-                    
-
-                    profileCard
-                )
-            )
-        ),
+        body = body,        
         footer = tablerDashFooter(
             # tablerIcon(name = "maestro", lib = "payment"),
             # tablerIcon(name = "mastercard", lib = "payment"),
@@ -1659,7 +979,7 @@ shiny::shinyApp(
         )
     ),
     server = function(input, output,session) {
-        
+        options(shiny.maxRequestSize=30*1024^2)
         values <- reactiveValues()
         
         output$news <- DT::renderDataTable({
@@ -1684,68 +1004,6 @@ shiny::shinyApp(
                                          lengthMenu = c(5, 10, 15, 20)))
         })
         
-        # output$tweets <- DT::renderDataTable({
-        #     q <- paste0('$',input$operatorSelect)
-        #     #print(q)
-        #     rt <- search_tweets(q, geocode = lookup_coords('usa'), n = 18000, token = token)
-        #     rt <- as.data.frame(rt)
-        #     
-        #     rt <- rt %>% arrange(desc(retweet_count))
-        #     rt <- rt %>% filter(grepl('Twitter', source))
-        #     rt <- rt %>% filter(is_retweet == FALSE)
-        #     rt$hashCount <- str_count(rt$text, '\\$')
-        #     rt <- rt %>% filter(hashCount <= 3)
-        #     #rt <- rt %>% filter(favorite_count > 0)
-        #     #rt <- rt %>% filter(retweet_count > 0)
-        #     rt <- rt %>% filter(screen_name != 'shortvolumes') %>% 
-        #         filter(screen_name != 'Tickeron') %>%
-        #         filter(screen_name != 'OptionsPastor') %>%
-        #         filter(screen_name != 'InfinitusCap')%>%
-        #         filter(screen_name != 'VegasTours')%>%
-        #         filter(screen_name != 'stockspastor')%>%
-        #         filter(screen_name != 'CarmichaelLeval')%>%
-        #         filter(screen_name != 'GingerRoelofs')%>%
-        #         filter(screen_name != 'AlertTrade')%>%
-        #         filter(screen_name != 'Gambiste1') %>% 
-        #         filter(screen_name != 'UPBOptionMil')%>%
-        #         filter(screen_name != 'r_wallstreet_')%>%
-        #         filter(screen_name != 'mscullion')%>%
-        #         filter(screen_name != 'oilbot123')%>%
-        #         filter(screen_name != '15minofPham')%>%
-        #         filter(screen_name != 'TeresaTrades')%>%
-        #         filter(screen_name != 'tastytraderMike')%>%
-        #         filter(screen_name != 'winthrop317')%>%
-        #         filter(screen_name != 'BearBullTraders') %>%
-        #         filter(screen_name != 'TheBurdetteLawF') %>%
-        #         filter(screen_name != 'apbeaton') %>%
-        #         filter(screen_name != 'MDLive4') %>%
-        #         filter(screen_name != 'msectors') %>%
-        #         filter(screen_name != 'CarlosmBBT') %>%
-        #         filter(screen_name != 'stickycactusink')
-        #     
-        #     if(nrow(rt) == 0){
-        #         NULL
-        #     } else {
-        #         rt <- rt %>% filter(!duplicated(text))
-        #         values$tweets <- rt
-        #         rt <- rt[,c('profile_image_url', 'screen_name', 'text', 'created_at')]
-        #         
-        #         #rt$profile_image_url <- img(src=rt$profile_image_url)
-        #         rt <- rt %>% mutate(image = paste0('<img src ="', profile_image_url, '" height = "52"></img>'))
-        #         rt <- rt[,c('image', 'screen_name', 'text', 'created_at')]
-        #         rt$screen_name <- paste0("<a target='_blank' href='",paste0('https://twitter.com/', rt$screen_name),"'>",rt$screen_name,"</a>")
-        #         rt$created_at <- as.Date(rt$created_at)
-        #         #rt$screen_name <- a(rt$screen_name, href=paste0('https://twitter.com/', rt$screen_name))
-        #         #print(head(rt))
-        #         names(rt) <- c('', '', '', '')
-        #         
-        #         DT::datatable(rt, rownames = FALSE, escape = FALSE,extensions = c('Buttons', 'ColReorder', 'FixedHeader','KeyTable',  'Scroller'),
-        #                       options = list(pageLength = 10,
-        #                                      lengthMenu = c(5, 10, 15)))
-        #     }
-        #     
-        # })
-
         output$hcplot <- renderEcharts4r({
             ticker <- input$operatorSelect
             stock <- getSymbols(ticker, src='yahoo', auto.assign = FALSE, setSymbolLookup('stock'))
@@ -2860,14 +2118,14 @@ shiny::shinyApp(
             
             oil <- curtailed.q(arps.decline(
                 declineValues()$qiOil*365, as.nominal(declineValues()$DiOil), declineValues()$bOil, as.nominal(declineValues()$DfOil)),
-                declineValues()$curtailOil/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                declineValues()$curtailOil/12.0, seq(0, 50-1/12, by = (1/12)))/12
             gas <- curtailed.q(arps.decline(
                 declineValues()$qiGas*365, as.nominal(declineValues()$DiGas), declineValues()$bGas, as.nominal(declineValues()$DfGas)),
-                declineValues()$curtailGas/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                declineValues()$curtailGas/12.0, seq(0, 50-1/12, by = (1/12)))/12
             
             water <- curtailed.q(arps.decline(
                 declineValues()$qiWater*365, as.nominal(declineValues()$DiWater), declineValues()$bWater, as.nominal(declineValues()$DfWater)),
-                declineValues()$curtailWater/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                declineValues()$curtailWater/12.0, seq(0, 50-1/12, by = (1/12)))/12
             
             df <- data.frame(Months = seq(1, 50*12, by = 1), Gas = gas, Oil = oil, Water = water)
             rm(oil, gas, water)
@@ -2967,28 +2225,32 @@ shiny::shinyApp(
                 hh1$DATE <- as.POSIXct(hh1$DATE, format = '%b/%d/%Y')
                 hh1 <- hh1 %>% arrange(DATE) %>% select(DATE, HH)
                 wti1 <- wti1 %>% filter(DATE >= min(hh1$DATE))
-                
-                crude = 'https://quotes.wsj.com/futures/CRUDE%20OIL%20-%20ELECTRONIC/contracts'
+                wti1 <- wti1 %>% filter(!is.na(WTI))
+                hh1 <- hh1 %>% filter(!is.na(HH))
+                crude = 'https://www.wsj.com/market-data/quotes/futures/CRUDE%20OIL%20-%20ELECTRONIC/contracts'
                 webpage <- read_html(crude)
                 #tbls <- html_nodes(webpage, 'table')
                 
                 tbls_ls <- webpage %>%
                     html_nodes('table') %>%
-                    .[2] %>%
+                    .[1] %>%
                     html_table(fill = TRUE)
                 
                 wti <- tbls_ls[[1]]
                 
-                crude = 'https://quotes.wsj.com/futures/NATURAL%20GAS/contracts'
+                crude = 'https://www.wsj.com/market-data/quotes/futures/NATURAL%20GAS/contracts'
                 webpage <- read_html(crude)
                 #tbls <- html_nodes(webpage, 'table')
                 
                 tbls_ls <- webpage %>%
                     html_nodes('table') %>%
-                    .[2] %>%
+                    .[1] %>%
                     html_table(fill = TRUE)
                 
-                hh <- tbls_ls[[1]]
+                    
+                
+                    hh <- tbls_ls[[1]]
+                
                 
                 
                 rm(crude, webpage, tbls_ls)
@@ -3164,12 +2426,16 @@ shiny::shinyApp(
                 Component = c('qiOil', 'bOil', 'DiOil', 'DfOil', 'curtailOil', 'qfOil', 
                               'qiGas', 'bGas', 'DiGas', 'DfGas', 'curtailGas', 'qfGas',
                               'qiWater', 'bWater', 'DiWater', 'DfWater', 'curtailWater',
-                              'wellLife', 'wti', 'hh', 'wtiDev', 'hhDev', 'wtiPDP', 'hhPDP'),
+                              'wellLife', 'wti', 'hh', 'wtiDev', 'hhDev', 'wtiPDP', 'hhPDP',
+                              'DfTC', 'bTC', 'wellLifeTC',  'lowB', 'highB', 
+                              'lowDf', 'highDf'),
                 
                 Value = c(input$qiOil, input$bOil, input$DiOil, input$DfOil, input$curtailOil, input$qfOil,
                           input$qiGas, input$bGas, input$DiGas, input$DfGas, input$curtailGas, input$qfGas,
                           input$qiWater, input$bWater, input$DiWater, input$DfWater, input$curtailWater,
-                          input$wellLife, input$wti, input$hh, input$wtiDev, input$hhDev, input$wtiPDP, input$hhPDP),
+                          input$wellLife, input$wti, input$hh, input$wtiDev, input$hhDev, input$wtiPDP, input$hhPDP, input$DfTC,
+                          input$bTC, input$wellLifeTC,  input$lowB, input$highB, 
+                          input$lowDf, input$highDf),
                 stringsAsFactors = FALSE) %>% spread(Component, Value)
             
         })
@@ -3226,12 +2492,18 @@ shiny::shinyApp(
         
         output$economics <- renderText({
             df <- values$fcst
+            #print(head(expenseValues()))
             df$Oil <- df$Oil*expenseValues()$wi/100
+            #print(head(df))
             df$Gas <- df$Gas*expenseValues()$wi/100
             df$Water <- df$Water*expenseValues()$wi/100
             df$Sales_Gas <- df$Gas*expenseValues()$shrink
-            df$NGL <- df$Gas*expenseValues()$nglYield/100
+            
+            df$NGL <- df$Gas*expenseValues()$nglYield/1000
+            
             df$wi <- expenseValues()$wi
+            
+            
             df1 <- data.frame(Months = seq(((expenseValues()$spudToProd-1)*-1), 0, 1), Gas = 0, Oil = 0, Water = 0)
             df$capex <- 0
             df1$capex <- 0
@@ -3258,13 +2530,14 @@ shiny::shinyApp(
                 df$nglPrice <- df$oilPrice*expenseValues()$discNGL/100
             }
             
+            
             df$nri <- expenseValues()$nri#*expenseValues()$wi/100
             df$oilRev <- (df$oilPrice-expenseValues()$discOil)*df$nri/100*df$Oil
             df$gasRev <- (df$gasPrice-expenseValues()$discGas)*df$nri/100*df$Sales_Gas*expenseValues()$btu
             df$nglRev <- (df$nglPrice)*df$nri/100*df$NGL
             df$rev <- df$oilRev+df$gasRev+df$nglRev
             df$tax <- df$oilRev*expenseValues()$stxOil/100 + (df$gasRev+df$nglRev)*expenseValues()$stxGas/100 +
-                df$Oil*df$nri/100*expenseValues()$oilSTX + df$Gas*expenseValues()$nri/100*expenseValues()$gasSTX +
+                df$Oil*df$nri/100*expenseValues()$oilSTX + df$Gas*df$nri/100*expenseValues()$gasSTX +
                 df$rev*df$nri/100*expenseValues()$atx/100
             
             df$expense <- df$Oil*expenseValues()$varOilExp + df$Gas*expenseValues()$varGasExp + 
@@ -3272,7 +2545,9 @@ shiny::shinyApp(
                 expenseValues()$wrkExp*expenseValues()$wi/100 + expenseValues()$yr1Fixed*expenseValues()$wi/100
             
             df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*expenseValues()$wi/100 + expenseValues()$yr2Fixed*expenseValues()$wi/100
-            df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*expenseValues()$wi/100 + expenseValues()$yr2Fixed*expenseValues()$wi/100
+            df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*expenseValues()$wi/100 + expenseValues()$finalFixed*expenseValues()$wi/100
+            
+            
             df$nocf <- df$rev-df$tax-df$expense
             
             
@@ -3303,7 +2578,7 @@ shiny::shinyApp(
                 
                 
                 df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*df$wi[13:24]/100 + expenseValues()$yr2Fixed*df$wi[13:24]/100
-                df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$yr2Fixed*df$wi[25:nrow(df)]/100
+                df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$finalFixed*df$wi[25:nrow(df)]/100
                 df$nocf <- df$rev-df$tax-df$expense
                 df <- subset(df, select = -c(cumNOCF))
                 df <- subset(df, select = -c(wi2))
@@ -3356,7 +2631,7 @@ shiny::shinyApp(
                         expenseValues()$wrkExp*expenseValues()$wi/100 + expenseValues()$yr1Fixed*expenseValues()$wi/100
                     
                     df$expense[13:24] <- df$expense[13:24] - expenseValues()$yr1Fixed*df$wi[13:24]/100 + expenseValues()$yr2Fixed*df$wi[13:24]/100
-                    df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$yr2Fixed*df$wi[25:nrow(df)]/100
+                    df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - expenseValues()$yr1Fixed*df$wi[25:nrow(df)]/100 + expenseValues()$finalFixed*df$wi[25:nrow(df)]/100
                     df$nocf <- df$rev-df$tax-df$expense
                     df <- subset(df, select = -c(wi2))
                     df <- as.data.frame(df)
@@ -3441,36 +2716,34 @@ shiny::shinyApp(
             df$oilEUR <- values$oilEUR
             df$gasEUR <- values$gasEUR
             df$waterEUR <- values$waterEUR
-            df$yr1Dev <- yearValues()$yr1Dev
-            df$yr2Dev <- yearValues()$yr2Dev
-            df$yr3Dev <- yearValues()$yr3Dev
-            df$yr4Dev <- yearValues()$yr4Dev
-            df$yr5Dev <- yearValues()$yr5Dev
-            df$yr6Dev <- yearValues()$yr6Dev
-            df$yr7Dev <- yearValues()$yr7Dev
-            df$yr8Dev <- yearValues()$yr8Dev
-            df$yr9Dev <- yearValues()$yr9Dev
-            df$yr10Dev <- yearValues()$yr10Dev
-            df$startDate <- min(values$price$DATE)
-            df$wellCount <- yearValues()$wellCount
+            df$yr1Dev <- 0
+            df$yr2Dev <- 0
+            df$yr3Dev <- 0
+            df$yr4Dev <- 0
+            df$yr5Dev <- 0
+            df$yr6Dev <- 0
+            df$yr7Dev <- 0
+            df$yr8Dev <- 0
+            df$yr9Dev <- 0
+            df$yr10Dev <- 0
+            df$startDate <- today()
+            df$wellCount <- 100
+            df$id <- input$tcName
             
-
-            if(is.null(values$devPlan)){
-                df$id <- 'tc1'
+            if(is.null(values$devPlan)||nrow(values$devPlan)==0){
                 values$devPlan <- df
             } else {
-                id <- paste0('tc', (length(unique(values$devPlan$id))+1))
-                df$id <- id
-                values$devPlan <- rbind(values$devPlan, df)
+                df1 <- values$devPlan %>% filter(id != input$tcName)
+                values$devPlan <- rbind(df1, df)
             }
  
-            updateAwesomeRadio(session, 'tcLoads', choices = unique(values$devPlan$id), selected = 'tc1', status = 'primary')
+            updateAwesomeRadio(session, 'tcLoads', choices = unique(values$devPlan$id), status = 'primary')
             Sys.sleep(1)
             updateButton(session, 'saveTC', label = 'Save TC to Development Plan', style = 'primary')
             #print(unique(values$devPlan$id))
             
         })
-        
+       
         observeEvent(input$removeTC, {
             id1 <- input$tcLoads
             df1 <- values$devPlan %>% filter(id != id1)
@@ -3485,6 +2758,10 @@ shiny::shinyApp(
             values$pudFcst <- df1
             
         })
+       
+        
+        
+      
         
         output$pdpInstruct <- renderText({
             if(input$pdpType == 'Production Only'){
@@ -3497,6 +2774,568 @@ shiny::shinyApp(
             }
         })
         
+        output$wellsInfo <- renderText({
+            inFile <- input$file2
+            if (is.null(inFile)){
+                shinyjs::disable('calcDecline')
+                return(NULL)
+            }
+            df <- read.csv(inFile$datapath, header=TRUE)
+            values$tcWells <- df
+            #print(head(df))
+            
+            df1 <- paste0('Wells Uploaded: ', length(unique(df[,1])))
+            
+            names(df)[1] <- 'well'
+            df <- df %>% group_by(well) %>% mutate(count=n()) %>% ungroup() %>% group_by(well) %>% filter(max(count) >= 60)
+            #print(head(df))
+            df2 <- paste0(', Wells Greather than 5 years : ', length(unique(df$well)))
+            shinyjs::enable('calcDecline')
+            append(df1, df2)
+            
+        }
+        )
+        
+        getmode <- function(v) {
+            uniqv <- unique(v)
+            uniqv[which.max(tabulate(match(v, uniqv)))]
+        }
+        
+        observeEvent(input$calcDecline, {
+            if(is.null(values$tcWells)){
+                NULL
+            } else {
+                updateButton(session, 'calcDecline', 'Calculating', style = 'danger')
+                shinyjs::disable('calcDecline')
+                df <- values$tcWells
+                names(df) <- c('well', 'date', 'volume')
+                df$volume <- as.numeric(df$volume)
+                df$id <- paste0(df$well, df$date)
+                df <- df %>% filter(!duplicated(id))
+                
+                
+                df <- subset(df, select = -c(id))
+                #print(head(df))
+                df$date1 <- df$date
+                df$date <- as.POSIXct(df$date, format = '%m/%d/%Y')
+                df$date1 <- as.POSIXct(df$date1, format = '%m-%d-%Y')
+                #df$date <- anytime(df$date)
+                df$date[is.na(df$date)] <- df$date1[is.na(df$date)]
+                df <- subset(df, select = -c(date1))
+                df <- df %>% arrange(well, date) %>% mutate(months = 1) %>%
+                    group_by(well) %>% 
+                    mutate(months = cumsum(months), fp.year = year(min(date)), lp.year=year(max(date))) %>% ungroup()
+                zeroMonths <- df %>% filter(volume == 0) %>% group_by(well) %>% summarise(zeroMonths =n()) %>%ungroup()
+                df <- merge(df, zeroMonths, by='well', all.x=TRUE) 
+                df$hour <- hour(df$date)
+                df$date[df$hour == 23] <- df$date[df$hour == 23] %m+% hours(1)
+                #print(head(df))
+                
+                prod.data1 <- df %>% filter(lp.year == max(df$lp.year)) %>% group_by(well) %>% 
+                    filter(max(months) >= 60) %>% ungroup()  %>%
+                    arrange(well, date)
+                prod.data1 <- as.data.frame(prod.data1)
+                #print(head(prod.data1))
+                if(nrow(prod.data1)>0){
+                    
+                    econSummary <- lapply(split(prod.data1, prod.data1[,'well']), function (well) tryCatch({
+                        well <- as.data.frame(well)
+                        well <- well %>% mutate(prodMonths = cumsum(months/months))
+                        prod.oil <- well[,c('date', 'volume')]
+                        
+                        
+                        prod.oil <- prod.oil %>% mutate(peak = if_else(volume == max(prod.oil$volume), date, as.POSIXct(today()))) %>% mutate(peak = min(peak)) %>% mutate(volume = if_else(date < peak, 0, volume))
+                        
+                        prod.oil <- prod.oil %>% mutate(cumOil = sum(volume), zeroOil = n()) %>% filter(volume > 0) %>% mutate(zeroOil = zeroOil - n(), prodMonths = cumsum((volume+1)/(volume+1)))
+                        
+                        if(nrow(prod.oil) < 3) {
+                            arps <- data.frame(qi = 0, Di = 16, Df = 0.08, b = 1)
+                            t.curtail <- 0
+                            bFitOil <- list(arps, t.curtail)
+                            names(bFitOil)[1] <- 'arps'
+                            names(bFitOil)[2] <- 't.curtail'
+                        } else {
+                            bFitOil <- best.hyp2exp.curtailed.from.interval(
+                                prod.oil$volume, prod.oil$prodMonths/12, t.begin = 0.0,
+                                lower = c(0, 0.4, 0.01, 0.02, 0),
+                                upper = c(max(prod.oil$volume)*12*2, 30, 2.5, 0.3, 24))$decline
+                        }
+                        
+                       
+                        df <- data.frame(b = round(bFitOil$arps$b,2),  Df = round(as.effective(bFitOil$arps$Df),3))
+                        
+                        df
+                    },
+                    error = function(e) {
+                        e
+                        NULL
+                    }))
+                    
+                    
+                    
+                    terminalDeclines <- dplyr::bind_rows(econSummary) %>% filter(b < 2.5 & b >0.01) %>%
+                        filter(as.nominal(Df) > 0.02 & as.nominal(Df) < 0.3)
+                    values$terminalDeclines <- as.data.frame(terminalDeclines)
+                    updateNumericInput(session, 'DfTC', 'Default Terminal Decline', value = getmode(terminalDeclines$Df))
+                    #updateNumericInput(session, 'DiTC', 'Default Initial Decline', value = getmode(terminalDeclines$Di))
+                    updateNumericInput(session, 'bTC', 'Default B-Factor', value = getmode(terminalDeclines$b))
+                    #print(quantile(terminalDeclines$b))
+                    #print(quantile(terminalDeclines$Df))
+                } else {
+                    values$terminalDeclines <- data.frame(b = declineValues()$bTC, Df = declineValues()$DfTC)
+                }
+                shinyjs::enable('calcDecline')
+                updateButton(session, 'calcDecline', 'Calculate', style = 'primary')
+            }
+        })
+        
+        
+        
+
+        observeEvent(input$DfTC, {
+            if(is.null(values$terminalDeclines)){
+                NULL
+            } else {
+                updateSliderInput(session, 'lowDf', 'Minimum Terminal Decline', max = input$DfTC-0.0001)
+                updateSliderInput(session, 'highDf', 'Maximum Terminal Decline', min = input$DfTC)
+            }
+        })
+        observeEvent(input$bTC, {
+            if(is.null(values$terminalDeclines)){
+                NULL
+            } else {
+                updateSliderInput(session, 'lowB', 'Minimum B-Factor', max = input$bTC-0.0001)
+                updateSliderInput(session, 'highB', 'Maximum B-Factor', min = input$bTC)
+            }
+        })
+
+        
+        observe({
+            if(is.null(values$terminalDeclines)||nrow(values$terminalDeclines)==1){
+                NULL
+            } else {
+                values$plotB <- values$terminalDeclines %>% filter(Df <= declineValues()$highDf) %>% filter(Df >= declineValues()$lowDf) %>%
+                     filter(b >= declineValues()$lowB) %>%
+                    filter(b <= declineValues()$highB) %>%
+                    e_charts() %>%
+                    #e_histogram(b, name = "histogram") %>%
+                    e_density(b, areaStyle = list(opacity = .4), smooth = TRUE, name = "density", y_index = 1) %>%
+                    e_tooltip(trigger = "axis")
+                
+                
+                
+                values$plotDf <- values$terminalDeclines %>% filter(Df <= declineValues()$highDf) %>% filter(Df >= declineValues()$lowDf) %>%
+                    filter(b >= declineValues()$lowB) %>%
+                    filter(b <= declineValues()$highB) %>%
+                    e_charts() %>%
+                    #e_histogram(b, name = "histogram") %>%
+                    e_density(Df, areaStyle = list(opacity = .4), smooth = TRUE, name = "density", y_index = 1) %>%
+                    e_tooltip(trigger = "axis")
+            }
+        })
+        
+        
+        output$DfPlot <- renderEcharts4r({
+            if(is.null(values$terminalDeclines)||nrow(values$terminalDeclines)==1){
+                NULL
+            } else {
+                values$plotDf%>%
+                    e_mark_line(data = list(xAxis = declineValues()$lowDf), title = 'Minimum Terminal Decline') %>%
+                    e_mark_line(data = list(xAxis = declineValues()$highDf), title = 'Maximum Terminal Decline')
+                
+            }
+        })
+        
+       
+        
+        output$bPlot <- renderEcharts4r({
+            if(is.null(values$terminalDeclines)||nrow(values$terminalDeclines)==1){
+                NULL
+            } else {
+               values$plotB %>%
+                    e_mark_line(data = list(xAxis = declineValues()$lowB), title = 'Minimum B-Factor') %>%
+                    e_mark_line(data = list(xAxis = declineValues()$highB), title = 'Maximum B-Factor')
+                
+            }
+        })
+        
+        
+        observeEvent(input$buildPDP, {
+            if(is.null(values$tcWells)){
+                NULL
+            } else {
+                updateButton(session, 'buildPDP', 'Calculating', style = 'danger')
+                shinyjs::disable('buildPDP')
+                df <- values$tcWells
+                names(df) <- c('well', 'date', 'volume')
+                df$volume <- as.numeric(df$volume)
+                df$id <- paste0(df$well, df$date)
+                df <- df %>% filter(!duplicated(id))
+                
+                
+                df <- subset(df, select = -c(id))
+                #print(head(df))
+                df$date1 <- df$date
+                df$date <- as.POSIXct(df$date, format = '%m/%d/%Y')
+                df$date1 <- as.POSIXct(df$date1, format = '%m-%d-%Y')
+                #df$date <- anytime(df$date)
+                df$date[is.na(df$date)] <- df$date1[is.na(df$date)]
+                df <- subset(df, select = -c(date1))
+                df <- df %>% arrange(well, date) %>% mutate(months = 1) %>%
+                    group_by(well) %>% 
+                    mutate(months = cumsum(months), fp.year = year(min(date)), lp.year=year(max(date))) %>% ungroup()
+                zeroMonths <- df %>% filter(volume == 0) %>% group_by(well) %>% summarise(zeroMonths =n()) %>%ungroup()
+                df <- merge(df, zeroMonths, by='well', all.x=TRUE) 
+                df$zeroMonths[is.na(df$zeroMonths)] <- 0
+                df$hour <- hour(df$date)
+                df$date[df$hour == 23] <- df$date[df$hour == 23] %m+% hours(1)
+                names(df)[1:3] <- c('API', 'date', 'oil')
+                #print(head(df))
+                wellData <- df %>% group_by(API) %>% summarise(cumOil = sum(oil), lp.year = mean(lp.year), fp.year=mean(fp.year)) %>% ungroup()
+                wellData$oilEUR <- NA
+                wellData$oilEUR[wellData$lp.year < 2019] <- wellData$cumOil[wellData$lp.year < 2019]
+                
+                
+                prod.data1 <- df %>% filter(lp.year == 2019) %>% group_by(API) %>% filter(max(months) >= 12) %>% 
+                    ungroup()  %>% arrange(API, date)
+
+                
+                econSummary <- lapply(split(prod.data1, prod.data1[,'API']), function (well) tryCatch({
+                    well <- as.data.frame(well)
+                    well <- well %>% mutate(prodMonths = seq(1, nrow(well), 1))
+                    prod.oil <- well[,c('date', 'oil')]
+                    
+                    prod.oil <- prod.oil %>% mutate(peak = if_else(oil == max(prod.oil$oil), date, as.POSIXct(today()))) %>% mutate(peak = min(peak)) %>% mutate(oil = if_else(date < peak, 0, oil))
+                    prod.oil <- prod.oil %>% mutate(cumOil = sum(oil), zeroOil = n()) %>% filter(oil > 0) %>% mutate(zeroOil = zeroOil - n(), prodMonths = cumsum((oil+1)/(oil+1)))
+                    #print(head(prod.oil))
+                    if(nrow(prod.oil) < 3) {
+                        arps <- data.frame(qi = 0, Di = 16.8, Df = declineValues()$DfTC, b = declineValues()$bTC)
+                        t.curtail <- 0
+                        bFitOil <- list(arps, t.curtail)
+                        names(bFitOil)[1] <- 'arps'
+                        names(bFitOil)[2] <- 't.curtail'
+                    } else {
+                        bFitOil <- best.hyp2exp.curtailed.from.interval(
+                            prod.oil$oil, prod.oil$prodMonths/12, t.begin = 0.0,
+                            lower = c(0, 0.4, declineValues()$lowB, as.nominal(declineValues()$lowDf), 0),
+                            upper = c(max(prod.oil$oil)*12*2, 16.8, declineValues()$highB, as.nominal(declineValues()$highDf), 24))$decline
+                    }
+                    
+                    if(nrow(prod.oil) == 0) {
+                        bFitOil$t.curtail <- 0
+                    } else {
+                        bFitOil$t.curtail <- prod.oil$zeroOil[1]/12 + bFitOil$t.curtail
+                    }
+                    
+                    well$fcstOil <- curtailed.q(arps.decline(
+                        bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df),
+                        (bFitOil$t.curtail), well$prodMonths/12 - 1/12)/12.0
+                    
+                   #print(head(well))
+                    
+                    qiOilRisk <- sum(well$oil[(nrow(well)-2):nrow(well)])/sum(well$fcstOil[(nrow(well)-2):nrow(well)])
+                    
+                    
+                    qiOilRisk[is.nan(qiOilRisk)] <- 1
+                    
+                    
+                    bFitOil$arps$qi <- bFitOil$arps$qi*qiOilRisk
+                   
+                    
+                    qiOilMax <- max(well$oil)*24
+                   
+                    if (bFitOil$arps$qi > qiOilMax) {
+                        bFitOil$arps$qi <- qiOilMax
+                    }
+                    
+                    #print(head(well))
+                    well$fcstOil <- curtailed.q(arps.decline(
+                        bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df),
+                        (bFitOil$t.curtail), well$prodMonths/12 - 1/12)/12.0
+                    
+                  
+                    fcstOil <- curtailed.q(arps.decline(bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df), bFitOil$t.curtail, seq(nrow(well)/12, 80, by=(1/12)))/12.0
+                    
+                    #print(head(fcstOil))
+                    fcst <- as.data.frame(fcstOil)
+                    rm(fcstOil)
+                    
+                    fcst <- fcst[1:(declineValues()$wellLifeTC*12-nrow(well)),]
+                    #print(head(fcst))
+                    oilEUR <- sum(well$oil) + sum(fcst)
+                    
+                    
+                    df <- data.frame(API = well$API[1], oilEUR = oilEUR,
+                                     qiOil = bFitOil$arps$qi, DiOil = bFitOil$arps$Di, 
+                                     bOil = bFitOil$arps$b, DfOil = bFitOil$arps$Df, curtailOil = bFitOil$t.curtail)
+                    
+                    df
+                },
+                error = function(e) {
+                    e
+                    NULL
+                }))
+               
+                
+                eurData <- dplyr::bind_rows(econSummary)
+                #print(head(eurData))
+                data1 <- wellData %>% filter(fp.year >= 2014)
+               
+               
+                eurData1 <- eurData %>% filter(API %in% data1$API)
+                DiOilMin <- quantile(eurData1$DiOil, 0.25)
+                DiOilMax <- quantile(eurData1$DiOil, 0.75)
+               
+                
+                
+                
+                prod.data1 <- df %>% filter(lp.year == 2019) %>% 
+                    group_by(API) %>% filter(max(months) < 12) %>% ungroup()  %>% arrange(API, date)
+                
+                econSummary <- lapply(split(prod.data1, prod.data1[,'API']), function (well) tryCatch({
+                    well <- as.data.frame(well)
+                    well <- well %>% mutate(prodMonths = seq(1, nrow(well), 1))
+                    prod.oil <- well[,c('date', 'oil')]
+                    
+                    prod.oil <- prod.oil %>% mutate(peak = if_else(oil == max(prod.oil$oil), date, as.POSIXct(today()))) %>% mutate(peak = min(peak)) %>% mutate(oil = if_else(date < peak, 0, oil))
+                    prod.oil <- prod.oil %>% mutate(cumOil = sum(oil), zeroOil = n()) %>% filter(oil > 0) %>% mutate(zeroOil = zeroOil - n(), prodMonths = cumsum((oil+1)/(oil+1)))
+                    
+                    if(nrow(prod.oil) < 3) {
+                        arps <- data.frame(qi = 0, Di = 16.8, Df = declineValues()$DfTC, b = declineValues()$bTC)
+                        t.curtail <- 0
+                        bFitOil <- list(arps, t.curtail)
+                        names(bFitOil)[1] <- 'arps'
+                        names(bFitOil)[2] <- 't.curtail'
+                    } else {
+                        bFitOil <- best.hyp2exp.curtailed.from.interval(
+                            prod.oil$oil, prod.oil$prodMonths/12, t.begin = 0.0,
+                            lower = c(0, DiOilMin, declineValues()$lowB, as.nominal(declineValues()$lowDf), 0),
+                            upper = c(max(prod.oil$oil)*12*2, DiOilMax, declineValues()$highB, as.nominal(declineValues()$highDf), 24))$decline
+                    }
+                    
+                    if(nrow(prod.oil) == 0) {
+                        bFitOil$t.curtail <- 0
+                    } else {
+                        bFitOil$t.curtail <- prod.oil$zeroOil[1]/12 + bFitOil$t.curtail
+                    }
+                    
+                    well$fcstOil <- curtailed.q(arps.decline(
+                        bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df),
+                        (bFitOil$t.curtail), well$prodMonths/12 - 1/12)/12.0
+                    
+                    
+                    
+                    qiOilRisk <- sum(well$oil[(nrow(well)-2):nrow(well)])/sum(well$fcstOil[(nrow(well)-2):nrow(well)])
+                    
+                    
+                    qiOilRisk[is.nan(qiOilRisk)] <- 1
+                    
+                    
+                    bFitOil$arps$qi <- bFitOil$arps$qi*qiOilRisk
+                    
+                    
+                    qiOilMax <- max(well$oil)*24
+                    
+                    if (bFitOil$arps$qi > qiOilMax) {
+                        bFitOil$arps$qi <- qiOilMax
+                    }
+                    
+                    
+                    well$fcstOil <- curtailed.q(arps.decline(
+                        bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df),
+                        (bFitOil$t.curtail), well$prodMonths/12 - 1/12)/12.0
+                    
+                    
+                    fcstOil <- curtailed.q(arps.decline(bFitOil$arps$qi, bFitOil$arps$Di, bFitOil$arps$b, bFitOil$arps$Df), bFitOil$t.curtail, seq(nrow(well)/12, 80, by=(1/12)))/12.0
+                    
+                    
+                    fcst <- as.data.frame(fcstOil)
+                    rm(fcstOil)
+                    
+                    fcst <- fcst[1:(declineValues()$wellLifeTC*12-nrow(well)),]
+                    
+                    oilEUR <- sum(well$oil) + sum(fcst)
+                    
+                    
+                    df <- data.frame(API = well$API[1], oilEUR = oilEUR,
+                                     qiOil = bFitOil$arps$qi, DiOil = bFitOil$arps$Di, 
+                                     bOil = bFitOil$arps$b, DfOil = bFitOil$arps$Df, curtailOil = bFitOil$t.curtail)
+                    
+                    df
+                },
+                error = function(e) {
+                    e
+                    NULL
+                }))
+              
+                eurData1 <- dplyr::bind_rows(econSummary)
+                eurData <- rbind(eurData, eurData1)
+                #print(head(eurData))
+                
+                names(eurData)[2] <- c('oilEUR1')
+                wellData <- merge(wellData, eurData, by='API', all.x=TRUE)
+                
+                wellData$oilEUR[is.na(wellData$oilEUR)] <- wellData$oilEUR1[is.na(wellData$oilEUR)]
+                
+                wellData <- subset(wellData, select = -c(oilEUR1))
+                wellData$DiOil[is.na(wellData$DiOil)] <- mean(wellData$DiOil, na.rm=TRUE)
+                wellData$bOil[is.na(wellData$bOil)] <- mean(wellData$bOil, na.rm=TRUE)
+                wellData$DfOil[is.na(wellData$DfOil)] <- mean(wellData$DfOil, na.rm=TRUE)
+                wellData$curtailOil[is.na(wellData$curtailOil)] <- 0
+                
+                
+                
+                ipRates <- df %>% group_by(API) %>% summarise(qiOil = max(oil)*12) %>% ungroup()
+                missing <- wellData %>% filter(is.na(qiOil))
+                names(ipRates)[2] <- c('qiOil1')
+                
+                wellData <- merge(wellData, ipRates, by='API', all.x=TRUE)
+                wellData$qiOil[is.na(wellData$qiOil)] <- wellData$qiOil1[is.na(wellData$qiOil)]
+                
+                
+                wellData <- subset(wellData, select = -c(qiOil1))
+                
+                wellData1 <- wellData %>% filter(is.na(oilEUR))
+                
+                econSummary <- lapply(split(wellData1, wellData1[,'API']), function (well) tryCatch({
+                    fcstOil <- curtailed.q(arps.decline(well$qiOil, well$DiOil, well$bOil, well$DfOil), well$curtailOil, seq(0, 80, by=(1/12)))/12.0
+                    
+                    fcst <- as.data.frame(fcstOil)
+                    
+                    fcst <- as.data.frame(fcst[1:(declineValues()$wellLifeTC*12-nrow(well)),])
+                    names(fcst) <- c('fcstOil')
+                    
+                    fcst$API <- well$API
+                    fcst <- fcst %>% group_by(API) %>% summarise(oilEUR1 = sum(fcstOil)) %>% ungroup()
+                    fcst <- as.data.frame(fcst)
+                    fcst
+                    
+                    
+                },
+                error = function(e) {
+                    e
+                    NULL
+                }))
+             
+                
+                wellData1 <- dplyr::bind_rows(econSummary)
+                
+                wellData <- merge(wellData, wellData1, by='API', all.x=TRUE)
+                
+                wellData$oilEUR[is.na(wellData$oilEUR)] <- wellData$oilEUR1[is.na(wellData$oilEUR)]
+                #print(head(wellData))
+                
+                
+                wellData <- subset(wellData, select = -c(oilEUR1))
+                
+                firstProd <- df %>% group_by(API) %>% summarise(firstProd = min(date), lastProd = max(date))
+                wellData <- merge(wellData, firstProd, by='API', all.x=TRUE)
+                wellData <- wellData %>% filter(!duplicated(API))
+                
+               econSummary <- lapply(split(wellData, wellData[,'API']), function (well) tryCatch({
+                    fcstOil <- curtailed.q(arps.decline(well$qiOil, well$DiOil, well$bOil, well$DfOil), well$curtailOil, seq(0, 80, by=(1/12)))/12.0
+                    
+                    fcst <- as.data.frame(fcstOil)
+                    fcst$date <- well$firstProd
+                    fcst$API <- well$API
+                    fcst$months <- seq(0,(nrow(fcst)-1),1)
+                    fcst$date <- fcst$date %m+% months(fcst$months)
+                    
+                    if(well$lp.year < 2019){
+                        fcst$fcstOil <- 0
+                    }
+                    
+                    prodData <- df %>% filter(API == well$API) %>% arrange(API, date)
+                    fcst$fcstOil[1:nrow(prodData)] <- prodData$oil
+                    
+                    fcst <- fcst[1:(declineValues()$wellLifeTC*12),]
+                    
+                    fcst <- fcst[,c('API', 'date', 'fcstOil')]
+                    names(fcst) <- c('API', 'date', 'oil')
+                    fcst$fp.year <- well$fp.year
+                    fcst
+                    
+                    
+                },
+                error = function(e) {
+                    e
+                    NULL
+                }))
+
+                values$prodSummary <- dplyr::bind_rows(econSummary)
+                values$pdpDeclineFactors <- wellData
+                #print(head(wellData))
+                #print(head(values$prodSummary))
+                updateButton(session, 'buildPDP', 'AUTOCAST', style = 'primary')
+                shinyjs::enable('buildPDP')
+            }
+        })
+        
+        
+        output$autoGraph <- renderPlotly({
+            if(is.null(values$prodSummary) || nrow(values$prodSummary) == 0){
+                NULL
+            } else {
+                storeWarn<- getOption("warn")
+                options(warn = -1)
+                
+                df <- values$prodSummary %>% group_by(fp.year, date) %>% summarise(Production = sum(oil)) %>% ungroup() %>% arrange(fp.year, date) %>%
+                    mutate(fp.year = as.factor(fp.year))
+                
+                df$Production[year(df$date) <= 2019] <- df$Production[year(df$date) <= 2019]/days_in_month(df$date[year(df$date) <= 2019])
+                df$Production[year(df$date) > 2019] <- df$Production[year(df$date) > 2019]/30.45
+                
+                plott <- plotly::plot_ly(df,
+                                         x=~date, y=~Production,type='area',  mode = 'stack', stackgroup='one',fillcolor = ~fp.year, fill = ~fp.year)  %>%
+                    layout(title = 'Daily Production By Year', yaxis = list(title='Daily Rate (bbl/mcf)'), xaxis=  list(title = ''))
+                
+                shinyjs::delay(expr =({
+                    options(warn = storeWarn)
+                }) ,ms = 100)
+                
+                plott
+            }
+            
+       
+            
+            
+        })
+        
+        output$autoTable <- DT::renderDataTable({
+            if(is.null(values$pdpDeclineFactors)){
+                NULL
+            }  else {
+                #print(head(values$pdpTable))
+                df <- values$pdpDeclineFactors
+                df$oilEUR <- as.integer(df$oilEUR)
+                df$qiOil <- as.integer(df$qiOil/365)
+                df$DiOil <- round(as.effective(df$DiOil), 3)
+                df$bOil <- round(df$bOil, 2)
+                df$DfOil <- round(as.effective(df$DfOil), 3)
+                df$curtailOil <- round(df$curtailOil*12,0)
+                df$firstProd <- as.Date(df$firstProd)
+                #df <- subset(df, select = -c(lastProd))
+                
+                df <- df[,c('API', 'firstProd', 'fp.year', 'lp.year', 'cumOil', 'qiOil', 'bOil', 'DiOil', 'DfOil', 'curtailOil', 'oilEUR')]
+                
+                names(df) <- c('Well', 'First Production Date',  'First Production Year', 'Last Production Year','Cumulative Volume',
+                               'Daily IP', 'B-Factor (H for ARIES)', 'Effective Initial Decline',  'Effective Terminal Decline',
+                               'Flat Period, Months', 'EUR')
+                
+                DT::datatable(df, rownames = FALSE,
+                              extensions = c('Buttons', 'Scroller'), 
+                              options = list(
+                                  dom = 'Bfrtip',
+                                  scrollX = TRUE,
+                                  scrollY = FALSE,
+                                  deferRender = TRUE,
+                                  paging = FALSE,
+                                  searching = FALSE,
+                                  buttons = c(I('colvis'),'copy', 'csv', 'excel', 'pdf', 'print')
+                              ))  
+            }
+        })
+      
         output$contents <- renderPlotly({
             # input$file1 will be NULL initially. After the user selects
             # and uploads a file, it will be a data frame with 'name',
@@ -3504,11 +3343,12 @@ shiny::shinyApp(
             # column will contain the local filenames where the data can
             # be found.
             inFile <- input$file1
-            
+
             if (is.null(inFile))
                 return(NULL)
-            
+
             df <- read.csv(inFile$datapath, header = TRUE)
+           
             if(input$pdpType == 'Production Only'){
                 names(df) <- c('Date', 'Oil', 'Gas', 'Water')
             } else {
@@ -3516,22 +3356,25 @@ shiny::shinyApp(
                                'netOil', 'netGas', 'netNGL', 'expense',  'capex', 'pna')
             }
             #print(head(df))
-            df$Date <- anytime(df$Date)
+            df$Date <- as.POSIXct(df$Date, format = '%m/%d/%Y')
             df$Date <- paste0(month(df$Date),'/01/', year(df$Date))
-            df$Date <- anytime(df$Date)
-            
+            df$Date <- as.POSIXct(df$Date, format = '%m/%d/%Y')
+            df$hour <- hour(df$Date)
+            df$Date[df$hour == 23] <- df$Date[df$hour == 23] %m+% hours(1)
+            df <- subset(df, select = -c(hour))
+            df <- as.data.frame(df)
             values$pdpCF <- df
             if(input$pdpType == 'Production Only'){
                 names(df) <- c('DATE', 'OIL', 'GAS', 'WATER')
             } else{
-                
-                names(df) <- c('DATE', 'WI OIL', 'WI GAS','WI SALES GAS', 'WI NGL','WI WATER',  
+
+                names(df) <- c('DATE', 'WI OIL', 'WI GAS','WI SALES GAS', 'WI NGL','WI WATER',
                                'NET OIL', 'NET GAS', 'NET NGL', 'EXPENSE', 'CAPEX', 'P&A')
             }
             plotly::plot_ly(df %>% gather(Component, Value, -DATE),
                             x=~DATE, y=~Value, color=~Component, type='scatter', mode='line')
-            
-            
+
+
         })
         
         observe({
@@ -3575,7 +3418,7 @@ shiny::shinyApp(
         })
         
         output$pdpPlot <- renderPlotly({
-            if(is.null(values$pdpCF)){
+            if(is.null(values$pdpCF)||is.null(input$file1)){
                 NULL
             } else {
                 df <- values$pdpCF# %>% filter(Date >= input$effDate)
@@ -3589,12 +3432,15 @@ shiny::shinyApp(
                    df$netGas <- df$Sales_Gas*expenseValues()$nriPDP/100
                    df$netNGL <- df$NGL*expenseValues()$nriPDP/100
                    df$wells <- expenseValues()$wellsPDP*expenseValues()$wiPDP/100
+                   
+                   
                    df1 <- df %>% filter(Date < input$effDate)
                    df <- df %>% filter(Date >= input$effDate)
                    wellDrop <- expenseValues()$wellsPDP*expenseValues()$wiPDP/100/(nrow(df)-1)
                    df$wellDrop <- 0
                    df$wellDrop[2:nrow(df)] <- wellDrop
                    df$wells <- df$wells - cumsum(df$wellDrop)
+                   
                    df$expense <- df$Oil * expenseValues()$varOilPDP +
                        df$Gas * expenseValues()$varGasPDP + 
                        df$Water * expenseValues()$varWaterPDP +
@@ -3615,6 +3461,7 @@ shiny::shinyApp(
                                'netOil', 'netGas', 'netNGL', 'expense', 'capex', 'pna')]
                    df1 <- df1[,names(df)]
                    df <- rbind(df1, df)
+                   
                 } else {
                     df <- df[,c('Date', 'Oil', 'Gas', 'Water', 'Sales_Gas', 'NGL',
                                 'netOil', 'netGas', 'netNGL', 'expense', 'capex', 'pna')]
@@ -3623,6 +3470,7 @@ shiny::shinyApp(
                 df <- df %>% filter(Date >= input$effDate)
                 names(df) <- c('DATE', 'WI OIL', 'WI GAS', 'WI WATER', 'WI SALES GAS', 'WI NGL',
                                'NET OIL', 'NET GAS', 'NET NGL', 'EXPENSE', 'CAPEX', 'P&A')
+                
                 plotly::plot_ly(df %>% gather(Component, Value, -DATE),
                                 x=~DATE, y=~Value, color=~Component, type='scatter', mode='line')
             }
@@ -3739,6 +3587,84 @@ shiny::shinyApp(
           }
         })
         
+        output$pdpQtrs <- DT::renderDataTable({
+          if(is.null(values$pdpTable)){
+            NULL
+          }  else {
+            #print(head(values$pdpTable))
+            
+            
+            df <- values$pdpTable
+            df <- subset(df, select = -c(Months, pv))
+            df$Date <- as.Date(df$Date)
+            df$Period <- paste0('Q', quarter(df$Date), year(df$Date))
+            
+
+            df <- df %>% group_by(Period) %>% 
+              summarise(Date = mean(Date),
+                        Oil = as.integer(sum(Oil)/1000),
+                        Gas = as.integer(sum(Gas)/1000),
+                        Water = as.integer(sum(Water)/1000),
+                        Sales_Gas = as.integer(sum(Sales_Gas)/1000),
+                        NGL = as.integer(sum(NGL)/1000),
+                        netOil = as.integer(sum(netOil)/1000),
+                        netGas = as.integer(sum(netGas)/1000),
+                        netNGL = as.integer(sum(netNGL)/1000),
+                        expense = as.integer(sum(expense)/1000),
+                        capex = as.integer(sum(capex)/1000),
+                        pna = as.integer(sum(pna)/1000),
+                        oilPrice = mean(oilPrice),
+                        gasPrice = mean(gasPrice),
+                        nglPrice = mean(nglPrice),
+                        oilRev = as.integer(sum(oilRev)/1000),
+                        gasRev = as.integer(sum(gasRev)/1000),
+                        nglRev = as.integer(sum(nglRev)/1000),
+                        revenue = as.integer(sum(revenue)/1000),
+                        tax = as.integer(sum(tax)/1000),
+                        nocf = as.integer(sum(nocf)/1000),
+                        fcf = as.integer(sum(fcf)/1000)) %>% ungroup() %>%
+              arrange(Date)
+            
+            df <- subset(df, select = -c(Date))
+                        
+            df$expense <- dollar(df$expense)
+            df$capex <- dollar(df$capex)
+            df$pna <- dollar(df$pna)
+            df$oilPrice <- dollar(df$oilPrice)
+            df$gasPrice <- dollar(df$gasPrice)
+            df$nglPrice <- dollar(df$nglPrice)
+            df$oilRev <- dollar(df$oilRev)
+            df$gasRev <- dollar(df$gasRev)
+            df$nglRev <- dollar(df$nglRev)
+            df$revenue <- dollar(df$revenue)
+            df$tax <- dollar(df$tax)
+            df$nocf <- dollar(df$nocf)
+            df$fcf <- dollar(df$fcf)
+            names(df) <- c('PERIOD', 'WI Oil, mbbls',
+                           'WI Gas, mmcf', 'WI Water, mbbls',
+                           'WI Sales Gas, mmcf', 'WI NGL, mbbls',
+                           'NRI Oil, mbbls', 'NRI Gas, mmcf',
+                           'NRI NGL, mbbls', 'Operating Expenses, m$',
+                           'Capital Expenditures, m$', 'P&A, m$',
+                           'Oil Price, $/bbl', 'Gas Price, $/mcf',
+                           'NGL Price, $/bbl', 'Oil Revenue, m$',
+                           'Gas Revenue, m$', 'NGL Revenue, m$', 'Revenue, m$',
+                           'Production Taxes, m$', 'NOCF, m$', 'FCF, m$')
+            DT::datatable(df, rownames = FALSE,
+                          extensions = c('Buttons', 'Scroller'), 
+                          options = list(
+                            dom = 'Bfrtip',
+                            scrollX = TRUE,
+                            scrollY = FALSE,
+                            deferRender = TRUE,
+                            paging = FALSE,
+                            searching = FALSE,
+                            buttons = c(I('colvis'),'copy', 'csv', 'excel', 'pdf', 'print')
+                          ))  
+          }
+        })
+        
+        
         output$tcInfo <- renderText({
             if(nrow(values$devPlan) == 0 || is.null(values$devPlan)){
                 NULL
@@ -3746,7 +3672,7 @@ shiny::shinyApp(
                 df <- values$devPlan %>% filter(id == input$tcLoads)
                 paste0('Oil EUR: ', df$oilEUR, ' MBO, Gas EUR: ', df$gasEUR, ' MMCF, Water EUR: ',
                        df$waterEUR, ' MBW, Capex: ',(df$completeCost + df$drillCost)/1000, ' M$, Reversion?: ', df$reversion,
-                       ', Economic Limit?: ', df$econAban)
+                       ', Economic Limit?: ', df$econAban, ', Well Count: ', df$wellCount)
             }
         })
         
@@ -3758,12 +3684,14 @@ shiny::shinyApp(
                 shinyjs::show('wtiDev')
                 shinyjs::show('hhDev')
             }
+          
+          
         })
         
         observe({
-            if(nrow(values$devPlan) == 0 || is.null(values$devPlan)){
-                NULL
-            } else {
+            # if(nrow(values$devPlan) == 0 || is.null(values$devPlan)){
+            #     NULL
+            # } else {
                 id1 <- input$tcLoads
                 
                 updateDateInput(session, 'startDate', value = values$devPlan$startDate[values$devPlan$id == id1])
@@ -3780,7 +3708,7 @@ shiny::shinyApp(
                 updateNumericInput(session, 'yr10Dev', value = values$devPlan$yr10Dev[values$devPlan$id == id1])
                 
                 
-            }
+            # }
         })
         
         observeEvent(input$startDate, {
@@ -3802,8 +3730,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$wellCount <- yearValues()$wellCount
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$wellCount)){
+                  df$wellCount <- df$wellCount
+                } else {
+                  df$wellCount <- yearValues()$wellCount
+                  values$devPlan <- rbind(df, df1)
+                }
             }
         })
         
@@ -3826,9 +3758,13 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr1Dev <- yearValues()$yr1Dev
-                values$devPlan <- rbind(df, df1)
-            
+                
+                if(is.na(yearValues()$yr1Dev)){
+                  df$yr1Dev <- df$yr1Dev
+                } else {
+                  df$yr1Dev <- yearValues()$yr1Dev
+                  values$devPlan <- rbind(df, df1)
+                }
                 
             }
         })
@@ -3840,8 +3776,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr2Dev <- yearValues()$yr2Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr2Dev)){
+                  df$yr2Dev <- df$yr2Dev
+                } else {
+                  df$yr2Dev <- yearValues()$yr2Dev
+                  values$devPlan <- rbind(df, df1)
+                }
   
             }
         })
@@ -3853,8 +3793,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr3Dev <- yearValues()$yr3Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr3Dev)){
+                  df$yr3Dev <- df$yr3Dev
+                } else {
+                  df$yr3Dev <- yearValues()$yr3Dev
+                  values$devPlan <- rbind(df, df1)
+                }
 
             }
         })
@@ -3866,8 +3810,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr4Dev <- yearValues()$yr4Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr4Dev)){
+                  df$yr4Dev <- df$yr4Dev
+                } else {
+                  df$yr4Dev <- yearValues()$yr4Dev
+                  values$devPlan <- rbind(df, df1)
+                }
 
             }
         })
@@ -3879,8 +3827,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr5Dev <- yearValues()$yr5Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr5Dev)){
+                  df$yr5Dev <- df$yr5Dev
+                } else {
+                  df$yr5Dev <- yearValues()$yr5Dev
+                  values$devPlan <- rbind(df, df1)
+                }
 
             }
         })
@@ -3892,8 +3844,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr6Dev <- yearValues()$yr6Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr6Dev)){
+                  df$yr6Dev <- df$yr6Dev
+                } else {
+                  df$yr6Dev <- yearValues()$yr6Dev
+                  values$devPlan <- rbind(df, df1)
+                }
 
             }
         })
@@ -3905,8 +3861,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr7Dev <- yearValues()$yr7Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr7Dev)){
+                  df$yr7Dev <- df$yr7Dev
+                } else {
+                  df$yr7Dev <- yearValues()$yr7Dev
+                  values$devPlan <- rbind(df, df1)
+                }
       
             }
         })
@@ -3918,9 +3878,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr8Dev <- yearValues()$yr8Dev
-                values$devPlan <- rbind(df, df1)
-                
+                if(is.na(yearValues()$yr8Dev)){
+                  df$yr8Dev <- df$yr8Dev
+                } else {
+                  df$yr8Dev <- yearValues()$yr8Dev
+                  values$devPlan <- rbind(df, df1)
+                }
             }
         })
         
@@ -3931,8 +3894,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr9Dev <- yearValues()$yr9Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr9Dev)){
+                  df$yr9Dev <- df$yr9Dev
+                } else {
+                  df$yr9Dev <- yearValues()$yr9Dev
+                  values$devPlan <- rbind(df, df1)
+                }
                 
             }
         })
@@ -3944,8 +3911,12 @@ shiny::shinyApp(
                 id1 <- input$tcLoads
                 df <- values$devPlan %>% filter(id == id1)
                 df1 <- values$devPlan %>% filter(id != id1)
-                df$yr10Dev <- yearValues()$yr10Dev
-                values$devPlan <- rbind(df, df1)
+                if(is.na(yearValues()$yr10Dev)){
+                  df$yr10Dev <- df$yr10Dev
+                } else {
+                  df$yr10Dev <- yearValues()$yr10Dev
+                  values$devPlan <- rbind(df, df1)
+                }
             }
         })
         
@@ -4022,6 +3993,13 @@ shiny::shinyApp(
                 dfx <- values$devPlan
                 #print(head(dfx))
                 dfx <- dfx[!duplicated(dfx),]
+                dfx$effDate <- input$effDate
+                dfx$startDate <- anytime(dfx$startDate)
+                
+                dfx$startDate <- paste0(month(dfx$startDate), '/01/',year(dfx$startDate))
+                dfx$effDate <- paste0(month(dfx$effDate), '/01/',year(dfx$effDate))
+                dfx$startDate <- anytime(dfx$startDate)
+                dfx$effDate <- anytime(dfx$effDate)
                 econSummary <- lapply(split(dfx, dfx[,'id']), function (well) tryCatch({
                     startDate1 <- data.frame(Month = seq(0, 30*12-1, 1))
                     startDate1$date <- min(well$startDate)
@@ -4067,6 +4045,7 @@ shiny::shinyApp(
                 names(prices) <- c('Date', 'oilPrice', 'gasPrice')
                 prices <- as.data.frame(prices)
                 
+                
                 if(nrow(dfx) == 0) {
                     values$pudFcst <- NULL
                 } else {
@@ -4080,14 +4059,14 @@ shiny::shinyApp(
                     
                         oil <- curtailed.q(arps.decline(
                             df1$qiOil*365, as.nominal(df1$DiOil), df1$bOil, as.nominal(df1$DfOil)),
-                            df1$curtailOil/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                            df1$curtailOil/12.0, seq(0, 50-1/12, by = (1/12)))/12
                         gas <- curtailed.q(arps.decline(
                             df1$qiGas*365, as.nominal(df1$DiGas), df1$bGas, as.nominal(df1$DfGas)),
-                            df1$curtailGas/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                            df1$curtailGas/12.0, seq(0, 50-1/12, by = (1/12)))/12
                         
                         water <- curtailed.q(arps.decline(
                             df1$qiWater*365, as.nominal(df1$DiWater), df1$bWater, as.nominal(df1$DfWater)),
-                            df1$curtailWater/12.0, seq(0, 50*12-1/12, by = (1/12)))/12
+                            df1$curtailWater/12.0, seq(0, 50-1/12, by = (1/12)))/12
                         
                         df <- data.frame(Months = seq(1, 50*12, by = 1), Gas = gas, Oil = oil, Water = water)
                         rm(oil, gas, water)
@@ -4113,7 +4092,7 @@ shiny::shinyApp(
                         df$Gas <- df$Gas*df1$wi/100
                         df$Water <- df$Water*df1$wi/100
                         df$Sales_Gas <- df$Gas*df1$shrink
-                        df$NGL <- df$Gas*df1$nglYield/100
+                        df$NGL <- df$Gas*df1$nglYield/1000
                         df$wi <- df1$wi
                         df2 <- data.frame(Months = seq(((df1$spudToProd-1)*-1), 0, 1), Gas = 0, Oil = 0, Water = 0)
                         df$capex <- 0
@@ -4166,7 +4145,7 @@ shiny::shinyApp(
                             df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                         
                         df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df1$wi/100 + df1$yr2Fixed*df1$wi/100
-                        df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df1$wi/100 + df1$yr2Fixed*df1$wi/100
+                        df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df1$wi/100 + df1$finalFixed*df1$wi/100
                         df$nocf <- df$rev-df$tax-df$expense
                         
                         
@@ -4196,7 +4175,7 @@ shiny::shinyApp(
                                 df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                             
                             df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
-                            df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
+                            df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$finalFixed*df$wi[25:nrow(df)]/100
                             df$nocf <- df$rev-df$tax-df$expense
                             df <- subset(df, select = -c(cumNOCF))
                             df <- subset(df, select = -c(wi2))
@@ -4249,7 +4228,7 @@ shiny::shinyApp(
                                     df1$wrkExp*df1$wi/100 + df1$yr1Fixed*df1$wi/100
                                 
                                 df$expense[13:24] <- df$expense[13:24] - df1$yr1Fixed*df$wi[13:24]/100 + df1$yr2Fixed*df$wi[13:24]/100
-                                df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$yr2Fixed*df$wi[25:nrow(df)]/100
+                                df$expense[25:nrow(df)] <- df$expense[25:nrow(df)] - df1$yr1Fixed*df$wi[25:nrow(df)]/100 + df1$finalFixed*df$wi[25:nrow(df)]/100
                                 df$nocf <- df$rev-df$tax-df$expense
                                 df <- subset(df, select = -c(wi2))
                                 df <- as.data.frame(df)
@@ -4282,6 +4261,7 @@ shiny::shinyApp(
                         
                         df <- rbind(df2, df)
                         df$fcf <- df$nocf - df$capex - df$pna
+                        df <- df %>% filter(Date >= input$effDate)
                         df$Months <- seq(0,nrow(df)-1,1)
                         df$id <- df1$id
                         #df$shrink <- df1$shrink
@@ -4326,6 +4306,129 @@ shiny::shinyApp(
             
             
         })
+        
+        output$pudYrFcst <- DT::renderDataTable({
+          if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
+            NULL
+          } else {
+            if(is.null(values$pdpData)){
+              
+              
+              df <- values$pudFcst %>% filter(Date >= input$effDate) %>% mutate(Year = year(Date)) %>%
+                group_by(Year) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
+                                                                     Water = as.integer(sum(Water)),  netOil = as.integer(sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
+                                                                     oilPrice = dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = dollar(mean(nglPrice, na.rm=TRUE)),
+                                                                     oilRev = dollar(as.integer(sum(oilRev))), gasRev = dollar(as.integer(sum(gasRev))),nglRev = dollar(as.integer(sum(nglRev))), 
+                                                                     revenue = dollar(as.integer(sum(revenue))), tax = dollar(as.integer(sum(tax))), expense = dollar(as.integer(sum(expense))), 
+                                                                     nocf= dollar(as.integer(sum(nocf))), capex = dollar(as.integer(sum(capex))), pna = dollar(as.integer(sum(pna))), fcf = dollar(as.integer(sum(fcf))))
+            } else {
+              
+              df <- values$pdpData %>% filter(Date >= input$effDate)
+              prices <- values$price
+              names(prices) <- c('Date', 'oilPrice', 'gasPrice')
+              prices <- as.data.frame(prices)
+              df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+              df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+              #print(head(df))
+              if(input$priceSelection == 'Flat'){
+                df$oilPrice <- declineValues()$wtiDev
+                df$gasPrice <- declineValues()$hhDev
+                df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+              } else {
+                df <- as.data.frame(df)
+                #str(df$Date)
+                #str(prices$Date)
+                df <- merge(df, prices, by='Date', all.x=TRUE)
+                df <- as.data.frame(df)
+                #print(head(df))
+                
+                #rm(prices)
+                df$oilPrice[1:24][is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                df$gasPrice[1:24][is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                df$oilPrice <- na.locf(df$oilPrice)
+                df$gasPrice <- na.locf(df$gasPrice)
+                #df$oilPrice[is.na(df$oilPrice)] <- mean(df$oilPrice, na.rm=TRUE)
+                #df$gasPrice[is.na(df$gasPrice)] <- mean(df$gasPrice, na.rm=TRUE)
+                
+                df$nglPrice <- df$oilPrice*expenseValues()$nglDiffPDP/100
+                #print(head(df))
+              }
+              df$oilRev <- df$netOil * (df$oilPrice - expenseValues()$oilDiffPDP)
+              df$gasRev <- df$netGas * (df$gasPrice - expenseValues()$hhDiffPDP)
+              df$nglRev <- df$netNGL * (df$oilPrice * expenseValues()$nglDiffPDP/100)
+              df$revenue <- df$oilRev+df$gasRev+df$nglRev
+              #print(head(df))
+              df$tax <- df$oilRev*expenseValues()$stxOilPDP/100 +
+                (df$gasRev+df$nglRev)*expenseValues()$stxGasPDP/100 +
+                df$netOil*expenseValues()$oilSTXPDP + df$netGas/expenseValues()$shrinkPDP*expenseValues()$gasSTXPDP +
+                df$revenue*expenseValues()$atxPDP/100
+              #print(head(df))
+              df$nocf <- df$revenue - df$tax - df$expense
+              #print(head(df))
+              if(input$econLimitPDP == 'Yes'){
+                row1 <- max(which(df$nocf >= 0))+1
+                if(row1 >= nrow(df)){
+                  NULL
+                } else {
+                  pnaSum <- sum(df$pna[row1:nrow(df)])
+                  df$pna[(row1-1)] <- df$pna[(row1-1)]+pnaSum
+                  df <- df[1:(row1-1),]
+                }
+                
+              }
+              #print(head(df))
+              df$fcf <- df$nocf - df$capex - df$pna
+              
+              df <- df[,c('Date', 'Oil', 'Gas', 'Sales_Gas', 'NGL', 'Water',
+                          'netOil', 'netGas', 'netNGL', 'oilPrice', 'gasPrice', 'nglPrice',
+                          'oilRev', 'gasRev', 'nglRev', 'revenue', 'tax', 'expense', 'nocf', 'capex', 'pna', 'fcf')]
+              
+              df$wells <- expenseValues()$wellsPDP
+              df$id <- '1PDP'
+              df1 <- df
+              df <- values$pudFcst
+              df <- as.data.frame(df)
+              df1 <- as.data.frame(df1)
+              df$Date <- paste0(year(df$Date),'-',month(df$Date), '-01')
+              df$Date <- as.POSIXct(df$Date, format = '%Y-%m-%d')
+              df1$Date <- paste0(year(df1$Date),'-',month(df1$Date), '-01')
+              df1$Date <- as.POSIXct(df1$Date, format = '%Y-%m-%d')
+              #print(head(df))
+              #print(head(df1))
+              df1 <- df1[,names(df)]
+              df <- rbind(df1, df)
+              df$Date <- as.Date(df$Date)
+              df <- df %>% filter(Date >= input$effDate) %>% mutate(Year = year(Date)) %>%
+                group_by(Year) %>%  summarise(Oil = as.integer(sum(Oil)), Gas = as.integer(sum(Gas)), Sales_Gas = as.integer(sum(Sales_Gas)), NGL = as.integer(sum(NGL)),
+                                              Water = as.integer(sum(Water)),  netOil = as.integer(sum(netOil)), netGas = as.integer(sum(netGas)), netNGL = as.integer(sum(netNGL)),
+                                              oilPrice = dollar(mean(oilPrice, na.rm=TRUE)),gasPrice = dollar(mean(gasPrice, na.rm=TRUE)), nglPrice = dollar(mean(nglPrice, na.rm=TRUE)),
+                                              oilRev = dollar(as.integer(sum(oilRev))), gasRev = dollar(as.integer(sum(gasRev))),nglRev = dollar(as.integer(sum(nglRev))), 
+                                              revenue = dollar(as.integer(sum(revenue))), tax = dollar(as.integer(sum(tax))), expense = dollar(as.integer(sum(expense))), 
+                                              nocf= dollar(as.integer(sum(nocf))), capex = dollar(as.integer(sum(capex))), pna = dollar(as.integer(sum(pna))), fcf = dollar(as.integer(sum(fcf))))
+              
+              
+              
+            }
+            
+            names(df) <- c('YEAR', 'OIL, BBL', 'GAS, MCF', 'SALES GAS, MCF', 'NGL, BBL', 'WATER, BBL', 'NET OIL, BBL', 'NET GAS, MCF', 'NET NGL, BBL', 'OIL PRICE, $', 'GAS PRICE, $', 'NGL PRICE, $', 'OIL REVENUE, $',
+                           'GAS REVENUE, $', 'NGL REVENUE, $', 'TOTAL REVENUE, $', 'TAXES, $', 'OPERATING EXPENSE, $', 'NET OPERATING CASH FLOW, $', 'CAPITAL EXPENDITURES, $', 'P&A, $', 'FREE CASH FLOW, $')
+            
+            values$finCalc <- df
+            DT::datatable(df, rownames = FALSE,
+                          extensions = c('Buttons', 'Scroller'), 
+                          options = list(
+                            dom = 'Bfrtip',
+                            scrollX = TRUE,
+                            scrollY = FALSE,
+                            deferRender = TRUE,
+                            paging = FALSE,
+                            searching = FALSE,
+                            buttons = c(I('colvis'),'copy', 'csv', 'excel', 'pdf', 'print')
+                          ))  
+            
+          }
+        })
+        
         
         output$pudFcst <- DT::renderDataTable({
             if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
@@ -4404,7 +4507,7 @@ shiny::shinyApp(
                                     'oilRev', 'gasRev', 'nglRev', 'revenue', 'tax', 'expense', 'nocf', 'capex', 'pna', 'fcf')]
                         
                         df$wells <- expenseValues()$wellsPDP
-                        df$id <- 'PDP'
+                        df$id <- '1PDP'
                         df1 <- df
                         df <- values$pudFcst
                         df <- as.data.frame(df)
@@ -4447,6 +4550,7 @@ shiny::shinyApp(
             }
         })
         
+   
         output$cfGraph <- renderPlotly({
             if(is.null(values$pudFcst) || nrow(values$pudFcst) == 0){
                 NULL
@@ -4518,7 +4622,7 @@ shiny::shinyApp(
                                 'oilRev', 'gasRev', 'nglRev', 'revenue', 'tax', 'expense', 'nocf', 'capex', 'pna', 'fcf')]
                     
                     df$wells <- expenseValues()$wellsPDP
-                    df$id <- 'PDP'
+                    df$id <- '1PDP'
                     df1 <- df
                     df <- values$pudFcst
                     df <- as.data.frame(df)
